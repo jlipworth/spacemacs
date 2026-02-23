@@ -1,0 +1,139 @@
+# Woodpecker CI configuration for Spacemacs elisp tests
+# Linux-focused mirror of the GitHub Actions test workflow
+# (.github/workflows/elisp_test.yml).
+
+variables:
+  - &testelpa_repo "JAremko/testelpa-develop"
+
+# Define the test matrix: Linux with Emacs 29.4 and 30.1
+matrix:
+  EMACS_VERSION:
+    - "29.4"
+    - "30.1"
+
+when:
+  - event: [push, pull_request, manual]
+
+steps:
+  # Fetch and unpack the pre-built ELPA mirror for faster package installation
+  - name: fetch-elpa-mirror
+    image: alpine:latest
+    commands:
+      - apk add --no-cache curl unzip
+      - |
+        curl -L \
+          "https://github.com/${TESTELPA_REPO}/releases/latest/download/elpa.zip" \
+          --output /tmp/elpa.zip
+      - unzip /tmp/elpa.zip -d ${CI_WORKSPACE}/../testelpa_mirror
+    environment:
+      TESTELPA_REPO: *testelpa_repo
+
+  # Setup: symlink repo to ~/.emacs.d and create .lock file for test ELPA config
+  - name: setup-emacs-home
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - |
+        cat > ~/.emacs.d/.lock << 'LOCKEOF'
+        (setq configuration-layer-elpa-archives
+              `(("melpa"    . "melpa.org/packages/")
+                ("org"      . "orgmode.org/elpa/")
+                ("gnu"      . "elpa.gnu.org/packages/")
+                ("spacelpa" . ,(concat configuration-layer-stable-elpa-directory
+                                       "spacelpa-"
+                                       configuration-layer-stable-elpa-version))
+                ("testelpa" . ,(format "%s/../testelpa_mirror"
+                                       (getenv "CI_WORKSPACE")))))
+
+        (setq package-archive-priorities
+              '(("testelpa" . 9)
+                ("spacelpa" . 8)
+                ("melpa"    . 4)
+                ("org"      . 2)
+                ("gnu"      . 1)))
+
+        (with-eval-after-load 'async-bytecomp
+         (setq async-bytecomp-allowed-packages nil))
+        LOCKEOF
+      - echo "Emacs version:" && emacs --version | head -1
+
+  # Core tests
+  - name: core-installation
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/core && make installation
+
+  - name: core-unit-tests
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/core && make unit_tests
+
+  - name: core-func-tests
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/core && make func_tests
+
+  # Spacemacs-base layer tests
+  - name: base-installation
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make installation
+
+  - name: base-unit-tests
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make unit_tests
+
+  - name: base-func-tests
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make func_tests
+
+  # Spacemacs layer tests
+  - name: layers-installation
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make installation
+
+  - name: layers-unit-tests
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make unit_tests
+
+  - name: layers-func-tests
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make func_tests
+
+  # Python layer tests
+  - name: python-unit-tests
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/layers/+lang/python && make unit_tests
+
+  - name: python-func-tests
+    image: silex/emacs:${EMACS_VERSION}
+    commands:
+      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd ${CI_WORKSPACE}/tests/layers/+lang/python && make func_tests

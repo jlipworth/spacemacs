@@ -1,0 +1,238 @@
+#+TITLE: Spacemacs Codebase Map
+#+AUTHOR: Developer Reference
+#+STARTUP: overview
+
+* Directory Structure
+
+| Directory      | Purpose                                        |
+|----------------+------------------------------------------------|
+| =core/=        | Core Spacemacs infrastructure (35+ files)      |
+| =layers/=      | Configuration layers by category               |
+| =doc/=         | User and developer documentation               |
+| =tests/=       | Unit and functional test suites                |
+| =private/=     | User-specific layers/config (mostly gitignored)|
+| =assets/=      | Images, banners, static resources              |
+| =elpa/=        | Installed packages                             |
+| =.cache/=      | Runtime cache                                  |
+
+* Core System (=core/=)
+
+** Initialization Flow
+
+1. =init.el= - Entry point, sets GC, loads paths
+2. =core-load-paths.el= - Directory constants
+3. =core-versions.el= - Version info
+4. =core-spacemacs.el= - Requires all core modules
+5. =configuration-layer/load()= - Loads user config
+6. =spacemacs/setup-startup-hook()= - Final hooks
+
+** Key Core Files
+
+*** =core-configuration-layer.el= (main layer system)
+- Layer discovery and loading
+- Package installation/initialization
+- Dependency resolution
+
+Key functions:
+- =configuration-layer/layer-used-p= - Check if layer enabled
+- =configuration-layer/package-used-p= - Check if package used
+- =configuration-layer/declare-layer-dependencies= - Require layers
+
+*** =core-dotspacemacs.el= (user config)
+- Loads =.spacemacs= or =~/.spacemacs.d/init.el=
+- Validates configuration
+- Manages dotspacemacs variables
+
+*** =core-keybindings.el= (keybinding infrastructure)
+- =spacemacs/set-leader-keys= - Global leader bindings
+- =spacemacs/set-leader-keys-for-major-mode= - Mode bindings
+- =spacemacs/declare-prefix= - Which-key prefixes
+
+*** =core-spacebind.el= (advanced bindings)
+- =spacemacs|spacebind= macro
+- Binding stacks for deferred setup
+
+*** =core-funcs.el= (utilities)
+- =spacemacs/system-is-mac=, =spacemacs/system-is-linux=
+- List manipulation, config helpers
+
+** Other Core Modules
+
+- =core-spacemacs-buffer.el= - Startup buffer display
+- =core-themes-support.el= - Theme management
+- =core-fonts-support.el= - Font configuration
+- =core-jump.el= - Code navigation
+- =core-toggle.el= - Feature toggles
+- =core-transient-state.el= - Transient key states
+- =core-use-package-ext.el= - use-package extensions
+
+* Layer System (=layers/=)
+
+** Layer Categories (top-level)
+
+| Category            | Contents                          |
+|---------------------+-----------------------------------|
+| =+chat/=            | Chat/IM integrations              |
+| =+checkers/=        | Linting and spell checking        |
+| =+lang/=            | Programming languages             |
+| =+tools/=           | Development tools                 |
+| =+completion/=      | Completion frameworks             |
+| =+distributions/=   | Distribution presets              |
+| =+emacs/=           | Emacs-native features             |
+| =+email/=           | Mail clients                      |
+| =+filetree/=        | File explorers                    |
+| =+fonts/=           | Font support                      |
+| =+frameworks/=      | Framework-specific layers         |
+| =+fun/=             | Non-essential/fun layers          |
+| =+intl/=            | Internationalization              |
+| =+misc/=            | Miscellaneous utilities           |
+| =+music/=           | Music/audio tooling               |
+| =+os/=              | OS-specific integrations          |
+| =+pair-programming/= | Collaborative editing            |
+| =+readers/=         | Reader/document modes             |
+| =+source-control/=  | Git, VCS                          |
+| =+spacemacs/=       | Core Spacemacs layers (14)        |
+| =+tags/=            | Code navigation/tag systems       |
+| =+themes/=          | Theme collections                 |
+| =+vim/=             | Vim keybindings                   |
+| =+web/=             | Web development                   |
+| =+web-services/=    | External web service clients      |
+| =+window-management/= | Window/layout management        |
+
+** Layer File Structure
+
+#+begin_example
+layers/+lang/ocaml/
+├── packages.el    # Package list and init functions (required)
+├── config.el      # Layer variables
+├── funcs.el       # Helper functions
+├── layers.el      # Optional: layer dependencies
+└── README.org     # Documentation
+#+end_example
+
+** Package Initialization
+
+#+begin_src elisp
+(defconst my-layer-packages '(pkg1 pkg2))
+
+(defun my-layer/init-pkg1 ()        ; Main init (required)
+  (use-package pkg1 ...))
+
+(defun my-layer/pre-init-pkg1 ()    ; Before init
+  ...)
+
+(defun my-layer/post-init-pkg1 ()   ; After init
+  ...)
+#+end_src
+
+** Package Toggles
+
+#+begin_src elisp
+(defconst my-layer-packages
+  '((pkg1 :toggle my-layer-enable-pkg1)
+    (pkg2 :requires company)))
+#+end_src
+
+* Key Extension Points
+
+** Adding Key Bindings
+
+#+begin_src elisp
+;; Global binding
+(spacemacs/set-leader-keys "o w" 'my-function)
+
+;; Mode-specific binding
+(spacemacs/set-leader-keys-for-major-mode 'python-mode
+  "d b" 'python-debug-breakpoint)
+
+;; Declare prefix for which-key
+(spacemacs/declare-prefix "o" "custom")
+(spacemacs/declare-prefix-for-mode 'python-mode "md" "debug")
+#+end_src
+
+** Adding a Layer
+
+#+begin_example
+mkdir -p private/layers/my-layer
+#+end_example
+
+Create =packages.el=:
+#+begin_src elisp
+(defconst my-layer-packages '(some-package))
+
+(defun my-layer/init-some-package ()
+  (use-package some-package
+    :defer t
+    :init ...
+    :config ...))
+#+end_src
+
+Add to =.spacemacs=:
+#+begin_src elisp
+dotspacemacs-configuration-layers '(my-layer)
+#+end_src
+
+* Test Infrastructure (=tests/=)
+
+** Test Structure
+
+- =tests/core/= - Core module tests
+- =tests/layers/= - Layer-specific tests
+- Files: =*-utest.el= (unit), =*-ftest.el= (functional)
+
+** Running Tests
+
+#+begin_src sh
+make -C tests/core test
+make -C tests/layers/+lang/python test
+#+end_src
+
+* Naming Conventions
+
+| Pattern              | Meaning                    |
+|----------------------+----------------------------|
+| =spacemacs/xxx=      | Public/interactive function |
+| =spacemacs//xxx=     | Private function            |
+| =spacemacs\vert{}xxx= | Macro                       |
+| =spacemacs-xxx=      | Public variable             |
+| =spacemacs--xxx=     | Private variable            |
+| =<layer>/init-xxx=   | Package initialization      |
+| =<layer>/post-init-xxx= | Post-init hook           |
+
+* Key Variables
+
+#+begin_src elisp
+;; User configuration
+dotspacemacs-configuration-layers  ; Enabled layers
+dotspacemacs-additional-packages   ; Extra packages
+dotspacemacs-excluded-packages     ; Excluded packages
+dotspacemacs-leader-key            ; Leader (default "SPC")
+
+;; Core paths
+spacemacs-start-directory          ; Root
+spacemacs-core-directory           ; core/
+spacemacs-cache-directory          ; .cache/
+spacemacs-private-directory        ; private/
+configuration-layer-directory      ; layers/
+#+end_src
+
+* Keybinding Conventions
+
+| Prefix      | Purpose                    |
+|-------------+----------------------------|
+| =SPC=       | Leader key                 |
+| =SPC m=     | Major mode (also =,=)      |
+| =SPC o=     | User reserved              |
+| =SPC t=     | Toggles                    |
+| =SPC m g=   | Goto commands              |
+| =SPC m s=   | REPL send                  |
+| =SPC m t=   | Tests                      |
+| =SPC m ==   | Formatting                 |
+
+* Related Documentation
+
+- [[file:DOCUMENTATION.org][DOCUMENTATION.org]] - Full user documentation
+- [[file:LAYERS.org][LAYERS.org]] - Layer development guide
+- [[file:CONVENTIONS.org][CONVENTIONS.org]] - Coding conventions
+- [[file:FAQ.org][FAQ.org]] - FAQ
+- [[file:../CONTRIBUTING.org][CONTRIBUTING.org]] - Contribution guide
