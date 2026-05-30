@@ -450,14 +450,16 @@
                prev-buffers (window-prev-buffers))
          (set-window-next-buffers nil nil)
          (let ((switch-to-prev-buffer-skip #'spacemacs//alternate-buffer-skip))
-           (previous-buffer))))
+           (spacemacs||without-layout-buffer-predicate
+             (previous-buffer)))))
        (lambda (_ignore)
          (lambda (arg)
            (with-selected-window window
              (let ((switch-to-prev-buffer-skip #'spacemacs//alternate-buffer-skip))
-               (if (cl-plusp arg)
-                   (previous-buffer)
-                 (next-buffer))))))
+               (spacemacs||without-layout-buffer-predicate
+                 (if (cl-plusp arg)
+                     (previous-buffer)
+                   (next-buffer)))))))
        :on-exit (progn (set-window-next-buffers window nil)
                        (set-window-prev-buffers window prev-buffers)
                        (with-current-buffer (window-buffer window)
