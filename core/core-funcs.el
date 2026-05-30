@@ -340,6 +340,38 @@ buffer."
       (and (bound-and-true-p spacemacs-layouts-restrict-spc-tab)
            (not (member buffer (persp-buffer-list))))))
 
+(defmacro spacemacs||without-layout-buffer-predicate (&rest body)
+  "Run BODY with the selected frame's `buffer-predicate' set so that it
+does not restrict to the current layout's buffers.
+
+`switch-to-prev-buffer' (which `spacemacs/alternate-buffer' delegates
+to via `previous-buffer') consults the frame `buffer-predicate' frame
+parameter.  persp-mode sets that parameter to a layout-restricted
+predicate by default, which silently filters out the genuine previous
+buffer across layouts and makes `SPC TAB' fall through to *spacemacs*,
+even when `spacemacs-layouts-restrict-spc-tab' is nil (its default).
+
+To honor that default while still respecting spacemacs's own
+useless-buffer filtering, this temporarily reinstates
+`spacemacs/useful-buffer-p' (the documented non-layout predicate from
+`default-frame-alist') for the duration of BODY.  Layout restriction
+remains opt-in through `spacemacs//alternate-buffer-skip'.  The frame
+parameter is saved and restored because frame parameters are not
+dynamically scoped."
+  (declare (indent 0) (debug t))
+  (let ((frame (make-symbol "frame"))
+        (old-pred (make-symbol "old-pred")))
+    `(let* ((,frame (selected-frame))
+            (,old-pred (frame-parameter ,frame 'buffer-predicate)))
+       (unwind-protect
+           (progn
+             (set-frame-parameter
+              ,frame 'buffer-predicate
+              (when (fboundp 'spacemacs/useful-buffer-p)
+                #'spacemacs/useful-buffer-p))
+             ,@body)
+         (set-frame-parameter ,frame 'buffer-predicate ,old-pred)))))
+
 (defun spacemacs/alternate-buffer (&optional window)
   "Switch back and forth between current and last buffer in WINDOW.
 
@@ -359,7 +391,8 @@ Instead, use `with-selected-window'."
   (let ((switch-to-prev-buffer-skip #'spacemacs//alternate-buffer-skip))
     (with-selected-window (or window (selected-window))
       (set-window-next-buffers nil nil)
-      (previous-buffer)
+      (spacemacs||without-layout-buffer-predicate
+        (previous-buffer))
       (set-window-next-buffers nil nil))))
 
 (defun spacemacs/alternate-window ()
