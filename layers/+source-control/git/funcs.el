@@ -1,4 +1,4 @@
-;;; funcs.el --- Colors Layer functions File  -*- lexical-binding: nil; -*-
+;;; funcs.el --- Git Layer functions File  -*- lexical-binding: nil; -*-
 ;;
 ;; Copyright (c) 2012-2025 Sylvain Benner & Contributors
 ;;
@@ -30,27 +30,23 @@
   (magit-status spacemacs-start-directory))
 
 (defun spacemacs/magit-toggle-whitespace ()
-  "Toggle whitespace in `magit-diff-mode'."
+  "Toggle ignoring whitespace (\"-w\") in the current Magit diff."
   (interactive)
-  (if (member "-w" (if (derived-mode-p 'magit-diff-mode)
-                       magit-refresh-args
-                     magit-diff-section-arguments))
+  (if (member "-w" magit-buffer-diff-args)
       (spacemacs//magit-dont-ignore-whitespace)
     (spacemacs//magit-ignore-whitespace)))
 
 (defun spacemacs//magit-ignore-whitespace ()
-  "Ignore whitespace in `magit-diff-mode'"
-  (add-to-list (if (derived-mode-p 'magit-diff-mode)
-                   'magit-refresh-args 'magit-diff-section-arguments) "-w")
+  "Ignore whitespace in the current Magit diff."
+  ;; `magit-buffer-diff-args' is the buffer-local list of diff arguments used by
+  ;; both `magit-status-mode' and `magit-diff-mode' in Magit 4 (it replaced the
+  ;; removed `magit-refresh-args'/`magit-diff-section-arguments' pair).
+  (add-to-list 'magit-buffer-diff-args "-w")
   (magit-refresh))
 
 (defun spacemacs//magit-dont-ignore-whitespace ()
-  "Don't ignore whitespace in `magit-diff-mode'"
-  (setq magit-diff-options
-        (remove "-w"
-                (if (derived-mode-p 'magit-diff-mode)
-                    magit-refresh-args
-                  magit-diff-section-arguments)))
+  "Stop ignoring whitespace in the current Magit diff."
+  (setq magit-buffer-diff-args (remove "-w" magit-buffer-diff-args))
   (magit-refresh))
 
 (defun spacemacs/git-permalink ()
