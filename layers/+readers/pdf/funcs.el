@@ -55,13 +55,15 @@ full hint text will not show up!"
     (format "\n[_?_] toggle help
  Navigation^^^^                Scale/Fit^^                    Annotations^^       Actions^^           Other^^
  ----------^^^^--------------- ---------^^------------------  -----------^^------ -------^^---------- -----^^---
- [_j_/_k_] scroll down/up      [_W_] fit to width             [_al_] list         [_s_] search         [_q_] quit
- [_h_/_l_] scroll left/right   [_H_] fit to height            [_at_] text         [_O_] outline
- [_d_/_u_] pg down/up          [_P_] fit to page              [_aD_] delete       [_p_] print
- [_J_/_K_] next/prev pg        [_m_] slice using mouse        [_am_] markup       [_o_] open link
- [_0_/_$_] full scroll l/r     [_b_] slice from bounding box  ^^                  [_r_] revert
- [_[_/_]_] history back/for    [_R_] reset slice              ^^                  [_t_] attachments
- ^^^^                          [_zr_] reset zoom              ^^                  [_n_] night mode"))
+ [_j_/_k_] scroll down/up      [_W_] fit to width             [_aa_] attach       [_s_] search         [_q_] quit
+ [_h_/_l_] scroll left/right   [_H_] fit to height            [_aD_] delete       [_O_] outline
+ [_d_/_u_] pg down/up          [_P_] fit to page              [_ah_] highlight    [_p_] print
+ [_J_/_K_] next/prev pg        [_m_] slice using mouse        [_al_] list         [_o_] open link
+ [_0_/_$_] full scroll l/r     [_b_] slice from bounding box  [_am_] markup       [_r_] revert
+ [_[_/_]_] history back/for    [_R_] reset slice              [_ao_] strikeout    [_n_] night mode
+ ^^^^                          [_zr_] reset zoom              [_as_] squiggly
+ ^^^^                          ^^                             [_at_] text
+ ^^^^                          ^^                             [_au_] underline"))
 
   (spacemacs|define-transient-state pdf-tools
     :title "PDF-tools Transient State"
@@ -94,17 +96,21 @@ full hint text will not show up!"
     ("R"  pdf-view-reset-slice)
     ("zr" pdf-view-scale-reset)
     ;; Annotations
+    ("aa" pdf-annot-attachment-dired :exit t)
     ("aD" pdf-annot-delete)
-    ("at" pdf-annot-attachment-dired :exit t)
+    ("ah" pdf-annot-add-highlight-markup-annotation)
     ("al" pdf-annot-list-annotations :exit t)
     ("am" pdf-annot-add-markup-annotation)
+    ("ao" pdf-annot-add-strikeout-markup-annotation)
+    ("as" pdf-annot-add-squiggly-markup-annotation)
+    ("at" pdf-annot-add-text-annotation)
+    ("au" pdf-annot-add-underline-markup-annotation)
     ;; Actions
     ("s" pdf-occur :exit t)
     ("O" pdf-outline :exit t)
     ("p" pdf-misc-print-document :exit t)
     ("o" pdf-links-action-perform :exit t)
     ("r" pdf-view-revert-buffer)
-    ("t" pdf-annot-attachment-dired :exit t)
     ("n" pdf-view-midnight-minor-mode)
     ;; Other
     ("q" nil :exit t)))

@@ -56,6 +56,21 @@ After installing the dependencies, add this to your =~/.spacemacs=.
   (setq-default dotspacemacs-configuration-layers '(pdf))
 #+END_SRC
 
+This layer reads the following variable:
+
+| *Variable*             | *Default* | *Description*                                                |
+|------------------------+-----------+--------------------------------------------------------------|
+| =pdf-view-use-scaling= | =t=       | Scale pages for sharper rendering on HiDPI/Retina displays.  |
+|                        |           | Set to =nil= if you hit performance problems, e.g. sluggish  |
+|                        |           | redisplay after zooming.                                     |
+
+For example, to disable scaling:
+
+#+BEGIN_SRC emacs-lisp
+  (setq-default dotspacemacs-configuration-layers
+                '((pdf :variables pdf-view-use-scaling nil)))
+#+END_SRC
+
 After that, synchronize your configuration with ~SPC f e R~. This will pop up a
 window showing the compilation process.
 
@@ -185,7 +200,7 @@ differently from the default Evil search. To go to the next match, use ~C-s~.
 |-----------------------+-------------------------------------------|
 | *Other*               |                                           |
 |-----------------------+-------------------------------------------|
-| ~SPC m s~             | Run =pdf-occur=                           |
+| ~SPC m s s~           | Run =pdf-occur=                           |
 | ~SPC m p~             | Display print version                     |
 
 ** Outline buffer mode
