@@ -48,7 +48,7 @@ This layers adds extensive support for [[http://git-scm.com/][git]] to Spacemacs
 - quick in buffer history browsing with [[https://melpa.org/#/git-timemachine][git-timemachine]].
 - quick in buffer last commit message per line with [[https://github.com/syohex/emacs-git-messenger][git-messenger]]
 - colorize buffer line by age of commit with [[https://github.com/syohex/emacs-smeargle][smeargle]]
-- git grep with [[https://github.com/yasuyk/helm-git-grep][helm-git-grep]]
+- git grep with [[https://github.com/yasuyk/helm-git-grep][helm-git-grep]] (provided by the =helm= layer, not this one)
 - org integration with magit via [[https://github.com/magit/orgit][orgit]]
 
 New to Magit? Checkout the [[https://magit.vc/about/][official intro]] and [[https://practical.li/spacemacs/source-control/][Practicalli Spacemacs]]
@@ -261,6 +261,7 @@ Here are the often used bindings inside a =status buffer=:
 |-------------+--------------------------------------------------------------------|
 | ~/~         | evil-search                                                        |
 | ~$~         | open =command output buffer=                                       |
+| ~C-S-w~     | toggle ignoring whitespace (=-w=) in the diff                      |
 | ~c c~       | open a =commit message buffer=                                     |
 | ~b b~       | checkout a branch                                                  |
 | ~b c~       | create a branch                                                    |
