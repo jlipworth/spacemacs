@@ -28,10 +28,10 @@
 (defun pdf/init-pdf-tools ()
   (use-package pdf-tools
     :defer t
-    :custom
-    ;; `pdf-view-use-scaling' can lead to severe performance problems,
-    ;; especially after zooming
-    (pdf-view-use-scaling nil)
+    ;; NOTE: `pdf-view-use-scaling' is intentionally NOT forced here. It is
+    ;; declared as a layer variable in config.el (default t, matching pdf-tools)
+    ;; so users can override it via (pdf :variables pdf-view-use-scaling nil).
+    ;; A `:custom' stanza would run on package load and clobber that value.
     :init
     (spacemacs//pdf-tools-setup-transient-state)
     (pdf-loader-install)
@@ -45,8 +45,8 @@
       "sb" 'pdf-view-set-slice-from-bounding-box
       "sr" 'pdf-view-reset-slice
       ;; Annotations
+      "aa"  'pdf-annot-attachment-dired
       "aD"  'pdf-annot-delete
-      "at"  'pdf-annot-attachment-dired
       "ah"  'pdf-annot-add-highlight-markup-annotation
       "al"  'pdf-annot-list-annotations
       "am"  'pdf-annot-add-markup-annotation
