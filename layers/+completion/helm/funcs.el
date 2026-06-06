@@ -625,6 +625,29 @@ to buffers)."
           (unless (eq orig-theme (funcall get-theme))
             (spacemacs//helm-themes-load (symbol-name orig-theme)))))))
 
+;; Robustness ------------------------------------------------------------------
+
+(defun spacemacs//helm-highlight-files-ignore-errors (orig-fn &rest args)
+  "Make `helm-highlight-files' tolerant of unreadable files.
+
+Upstream `helm-highlight-files' calls `file-attributes' on every
+candidate to decide how to colorize it. When a recentf entry lives
+under a directory whose permissions were revoked (e.g. chmod 000),
+`file-attributes' signals a `file-error' (\"Getting attributes:
+Permission denied\"), which aborts the whole `helm-mini'/`helm-recentf'
+display (upstream bug, see Spacemacs issue #17184).
+
+Run ORIG-FN with `file-attributes' wrapped so that a `file-error'
+yields nil instead of propagating. Such files simply fall back to the
+plain file face instead of breaking the entire source."
+  (cl-letf* ((orig-file-attributes (symbol-function 'file-attributes))
+             ((symbol-function 'file-attributes)
+              (lambda (&rest fa-args)
+                (condition-case nil
+                    (apply orig-file-attributes fa-args)
+                  (file-error nil)))))
+    (apply orig-fn args)))
+
 ;; Buffers ---------------------------------------------------------------------
 
 (defun spacemacs/helm-buffers-list-unfiltered ()
