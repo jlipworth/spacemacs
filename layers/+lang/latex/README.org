@@ -271,7 +271,7 @@ By default, the underlying latex code is echoed in the echo area.
 | ~SPC m *~                           | mark LaTeX section                         |
 | ~SPC m %~                           | comment or uncomment a paragraph           |
 | ~SPC m ;~                           | comment or uncomment a region              |
-| ~SPC m a~ or with LSP ~SPC m a u~   | run all commands (compile and open viewer) |
+| ~SPC m a~ or with LSP ~SPC m C~     | run all commands (compile and open viewer) |
 | ~SPC m b~ or with LSP ~SPC m c~     | build the document (compile)               |
 | ~SPC m c~ or with LSP ~SPC m i c~   | close LaTeX environment                    |
 | ~SPC m i c~ or with LSP ~SPC m i C~ | insert cite key                            |
