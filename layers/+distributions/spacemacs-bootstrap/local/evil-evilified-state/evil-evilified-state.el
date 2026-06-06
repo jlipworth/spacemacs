@@ -210,6 +210,21 @@ Needed to bypass keymaps set as text properties."
 (define-key evil-evilified-state-map (kbd "C-z") 'evil-emacs-state)
 (define-key evil-evilified-state-map (kbd "C-w") 'evil-window-map)
 (setq evil-evilified-state-map-original (copy-keymap evil-evilified-state-map))
+;; Make the leader key visible to the evilification logic.
+;; `bind-map' (since justbur/emacs-bind-map#13) no longer installs the leader
+;; binding directly into `evil-evilified-state-map'; it lives in an auxiliary
+;; keymap reached through `emulation-mode-map-alists' instead. As a result
+;; `evilified-state-evilify-map' no longer sees the leader key and stops
+;; relocating a mode-map's own leader-key binding to the alternate key (e.g.
+;; SPC -> ' for `org-agenda-show-and-scroll-up'). Record the leader binding in
+;; the snapshot used as the relocation source so the alternate binding is
+;; created again. This snapshot is only consumed by `evilified-state-evilify-map'
+;; and is never installed as a live keymap, so it does not affect the leader key.
+(define-key evil-evilified-state-map-original
+            (kbd (if (boundp 'dotspacemacs-leader-key)
+                     dotspacemacs-leader-key
+                   "SPC"))
+            'spacemacs-cmds)
 
 ;;;###autoload
 (defmacro evilified-state-evilify-map (map &rest props)
