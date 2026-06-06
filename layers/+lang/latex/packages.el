@@ -164,10 +164,16 @@
       "xfn" 'latex/font-normal
       "xfu" 'latex/font-upright)
 
-    ;; Rebind latex keys to avoid conflicts with lsp mode
+    ;; Rebind latex keys to avoid conflicts with lsp mode. lsp reserves the
+    ;; "a" (code actions) and "b" (backend) major-mode prefixes, so under the
+    ;; lsp backend the conventional "a"/"b" bindings are ceded to lsp (above)
+    ;; and the latex commands are relocated to free keys -- build on "c",
+    ;; run-all on "C". The previous relocation used "au", which sits under
+    ;; lsp's reserved "a" prefix and was therefore shadowed/unreachable while
+    ;; lsp-mode was active (#16390).
     (if (eq latex-backend 'lsp)
         (spacemacs/set-leader-keys-for-major-mode 'latex-mode
-          "au"   'TeX-command-run-all
+          "C"    'TeX-command-run-all
           "c"    'latex/build
           "iC"   'org-ref-insert-cite-key
           "ic"   'LaTeX-close-environment ;; C-c ]
