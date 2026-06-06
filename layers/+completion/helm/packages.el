@@ -198,6 +198,10 @@
     (helm-mode)
     (spacemacs|hide-lighter helm-mode)
     (advice-add 'helm-grep-save-results-1 :after 'spacemacs//gne-init-helm-grep)
+    ;; Don't let a single unreadable recentf entry abort `helm-mini' /
+    ;; `helm-recentf' (Spacemacs issue #17184).
+    (advice-add 'helm-highlight-files :around
+                'spacemacs//helm-highlight-files-ignore-errors)
     ;; helm-locate uses es (from everything on windows which doesn't like fuzzy)
     (helm-locate-set-command)
     (setq helm-locate-fuzzy-match (and (bound-and-true-p helm-use-fuzzy)
