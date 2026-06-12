@@ -76,18 +76,39 @@ the final step of executing code in `emacs-startup-hook'.")
 ;; Utility to regenerate autoloads for installed packages.
 (defun spacemacs//package-regenerate-autoloads (&optional path)
   "Regenerate the autoloads for installed packages.
-If PATH is provided, use it as the package directory, otherwise use `package-user-dir'."
+If PATH is provided, use it as the package directory, otherwise use `package-user-dir'.
+A package whose autoloads cannot be regenerated is reported with a warning
+and its existing autoloads file is restored, so one broken package neither
+loses its autoloads nor aborts the remaining packages."
   (interactive "P")
   (dolist (dir (or path (list package-user-dir)))
     (when (file-directory-p dir)
       (dolist (pkg-dir (directory-files dir t "\\`[^.]"))
         (when-let* (((file-directory-p pkg-dir))
                     (pkg-desc (package-load-descriptor pkg-dir)))
-          (let ((default-directory pkg-dir))
-            ;; Remove existing autoload files before regenerating.
-            (mapc 'delete-file (file-expand-wildcards "*-autoloads.el" )))
-          (package-generate-autoloads
-           (package-desc-name pkg-desc) pkg-dir))))))
+          (let ((default-directory pkg-dir)
+                backups)
+            (condition-case err
+                (progn
+                  ;; Move existing autoload files aside before regenerating.
+                  ;; `loaddefs-generate' skips output files newer than the
+                  ;; sources, so they cannot simply be left in place; but
+                  ;; deleting them outright loses them if generation fails.
+                  (dolist (f (file-expand-wildcards "*-autoloads.el"))
+                    (let ((backup (concat f ".bak")))
+                      (rename-file f backup t)
+                      (push (cons f backup) backups)))
+                  (package-generate-autoloads
+                   (package-desc-name pkg-desc) pkg-dir)
+                  (dolist (b backups) (delete-file (cdr b))))
+              (error
+               (dolist (b backups)
+                 (when (file-exists-p (cdr b))
+                   (rename-file (cdr b) (car b) t)))
+               (display-warning
+                'spacemacs
+                (format "Cannot regenerate autoloads for %s: %s"
+                        pkg-dir (error-message-string err)))))))))))
 
 ;; Lookup load hints for a given file.
 (defsubst spacemacs//lookup-load-hints (file)
