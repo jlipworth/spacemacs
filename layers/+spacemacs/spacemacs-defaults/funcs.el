@@ -1232,20 +1232,14 @@ such as is done by \\[spacemacs/prompt-kill-emacs].")
        (server-running-p)
        dotspacemacs-persistent-server))
 
-(define-advice kill-emacs (:around (f &rest args) spacemacs-really-exit)
-  "Do not actually kill Emacs if a persistent server is running.
-
-If `dotspacemacs-persistent-server' is non-nil and the Emacs
-server is running, just kill the current frame instead of the
-Emacs server.
-
-Setting `spacemacs-really-kill-emacs' non-nil overrides this advice."
-  (if (and (not spacemacs-really-kill-emacs)
-           (not noninteractive)         ;in batch mode, just kill emacs
-           (spacemacs//persistent-server-running-p))
-      (spacemacs/frame-killer)
-    (apply f args)))
-
+;; Note: only `save-buffers-kill-emacs' (a Lisp function) is advised.
+;; `kill-emacs' itself is a C primitive: advising it forces native-comp to
+;; install a subr trampoline at startup (which can abort init with
+;; "eln file inconsistent with current runtime configuration") and the
+;; advice is ignored anyway when Emacs exits from C (signals).  The window
+;; manager close path goes through `handle-delete-frame' ->
+;; `save-buffers-kill-emacs', so this advice is sufficient; a direct
+;; `kill-emacs' call exits unconditionally.
 (define-advice save-buffers-kill-emacs (:around (f &rest args) spacemacs-really-exit)
   "Do not actually kill Emacs if a persistent server is running.
 
