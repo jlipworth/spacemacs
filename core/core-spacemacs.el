@@ -152,8 +152,12 @@ of directories to file basenames."
           (noerror (nth 2 args)))
       (when-let* (((not filename))
                   (name (symbol-name feature))
-                  (path (spacemacs//lookup-load-hints name)))
-        (setq filename (expand-file-name name path)))
+                  (path (spacemacs//lookup-load-hints name))
+                  ;; Hints go stale when packages are added, updated or
+                  ;; removed in-session; only honor a hint whose file still
+                  ;; exists, otherwise fall back to the `load-path' search.
+                  (file (locate-file name (list path) (get-load-suffixes))))
+        (setq filename file))
       (list feature filename noerror)))
 
   (advice-add #'require :filter-args #'require@LOAD-HINTS '((depth . -99)))
