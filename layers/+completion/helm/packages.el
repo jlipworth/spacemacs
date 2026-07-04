@@ -327,6 +327,12 @@
       "srP" '("rg-search project w/ input" .
               spacemacs/helm-project-do-rg-region-or-symbol))
     :config
+    (unless (advice-member-p
+             #'spacemacs//helm-ag-do-ag-propertize-inhibit-read-only
+             'helm-ag--do-ag-propertize)
+      (advice-add 'helm-ag--do-ag-propertize
+                  :around
+                  #'spacemacs//helm-ag-do-ag-propertize-inhibit-read-only))
     (advice-add 'helm-ag--save-results :after 'spacemacs//gne-init-helm-ag)
     (evil-define-key 'normal helm-ag-map
       (kbd dotspacemacs-leader-key) spacemacs-default-map)
