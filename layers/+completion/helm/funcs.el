@@ -72,6 +72,15 @@
 
 ;; Search tools integration
 
+(defun spacemacs//helm-ag-do-ag-propertize-inhibit-read-only (orig-fn input)
+  "Allow `helm-ag' to propertize current Helm results.
+
+Recent Helm versions make the Helm buffer read-only. `helm-ag' still mutates
+that buffer while applying faces and candidate numbers in
+`helm-ag--do-ag-propertize', so bind `inhibit-read-only' around that operation."
+  (let ((inhibit-read-only t))
+    (funcall orig-fn input)))
+
 (defun spacemacs//helm-do-ag-region-or-symbol (func &optional dir)
   "Search with `ag' with a default input."
   (require 'helm-ag)
