@@ -12,10 +12,12 @@ upstream `syl20bnr/develop`). The goal: match open upstream issues to local fix
 commits — finding issues already fixed here (PR candidates) and issues we could
 fix next.
 
-**Key convention:** fix commits on `working` cite the issue they address with an
-`Upstream: syl20bnr/spacemacs#NNNNN` line in the commit body (prose, NOT a git
-trailer — `%(trailers)` won't find it). Grep these refs before any fuzzy
-matching.
+**Key convention:** do **not** put upstream issue references in commit messages
+on `working`. Rebased/force-pushed commits with issue autolinks pollute the
+upstream issue timeline. Keep the private mapping in local-only files under
+`.git/info/`, e.g. `.git/info/upstream-issue-map-with-rewritten-shas.tsv`, and
+mention/link the upstream issue only in the final PR body or an issue comment
+when the branch is stable.
 
 ## Repo facts (verify, don't rediscover)
 
@@ -33,10 +35,13 @@ matching.
 2. **Enumerate local fixes:** `git log --oneline develop..working` —
    `[layer]`-prefixed commits are the fixes; skip everything else
    (`docs:`, `chore:`, `gitignore:`, …).
-3. **Extract existing issue refs:**
+3. **Extract existing issue refs from local-only metadata:**
    ```sh
-   git log develop..working --format='%h %s%n%b' | rg '^[0-9a-f]{7,}|Upstream: \S*#\d+'
+   cat .git/info/upstream-issue-map-with-rewritten-shas.tsv
    ```
+   If that file is missing, reconstruct conservatively by matching commit
+   subjects/diffs against prior notes or the issue triage history; do not add
+   `#NNNNN`/`owner/repo#NNNNN` references back into commit messages.
 4. **Pull all open issues:**
    ```sh
    gh issue list -R syl20bnr/spacemacs --state open --limit 100 \
