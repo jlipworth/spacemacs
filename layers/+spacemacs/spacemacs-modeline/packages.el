@@ -26,10 +26,16 @@
         (doom-modeline :toggle (eq (spacemacs/get-mode-line-theme-name) 'doom))
         evil
         fancy-battery
+        (powerline :location (recipe
+                              :fetcher github
+                              :repo "jlipworth/powerline"
+                              :commit "32b417ca68383423f77e7afad2a97dc78cc62d4f")
+                   :toggle (or (spacemacs//enable-spaceline-p)
+                               (eq (spacemacs/get-mode-line-theme-name)
+                                   'vim-powerline)))
         (spaceline :toggle (spacemacs//enable-spaceline-p))
         (spaceline-all-the-icons :toggle (eq (spacemacs/get-mode-line-theme-name) 'all-the-icons))
         symon
-        (powerline :toggle (eq (spacemacs/get-mode-line-theme-name) 'vim-powerline))
         (vim-powerline :location (recipe :fetcher local)
                        :toggle (eq (spacemacs/get-mode-line-theme-name) 'vim-powerline))))
 
