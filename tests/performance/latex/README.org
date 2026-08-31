@@ -1,0 +1,139 @@
+#+title: LaTeX display performance benchmarks
+
+This directory contains diagnostic benchmarks for LaTeX fontification and
+redisplay.  They are deliberately separate from the ERT suite: elapsed-time
+assertions are too sensitive to machine load for CI, while the benchmark
+results are still useful when evaluating a change.
+
+* Magic LaTeX batch benchmark
+
+=latex-magic-benchmark.el= times the individual JIT passes supplied by
+=magic-latex-buffer=.  With no file arguments it generates a synthetic LaTeX
+document.  File arguments allow testing real documents without copying them
+into the repository.
+
+The benchmark needs AUCTeX and =magic-latex-buffer=.  Point
+=SPACEMACS_BENCH_PACKAGE_DIR= at the package directory belonging to the Emacs
+version under test:
+
+#+begin_src shell
+SPACEMACS_BENCH_PACKAGE_DIR="$HOME/.emacs.d/elpa/30.2/develop" \
+  emacs -Q --batch \
+  -l tests/performance/latex/latex-magic-benchmark.el -- \
+  "$HOME/path/to/document.tex"
+#+end_src
+
+Useful environment variables:
+
+| Variable                         | Default | Meaning                              |
+|----------------------------------+---------+--------------------------------------|
+| =LATEX_BENCH_ITERATIONS=         | 5       | Traversals of all sampled viewports  |
+| =LATEX_BENCH_VIEWPORT_LINES=     | 80      | Lines in each simulated viewport     |
+| =LATEX_BENCH_SYNTHETIC_KIB=      | 256     | Generated fixture size               |
+| =SPACEMACS_BENCH_PACKAGE_DIR=    | unset   | Package directory initialized first  |
+
+The benchmark samples the start, quartiles, and end of the buffer.  Each
+sample fontifies a viewport-sized region and reports median, p95, maximum,
+garbage-collection time, and overlays created.  It isolates these scenarios:
+
+- symbol substitution;
+- subscript and superscript display;
+- the complete prettifier (symbols plus sub/superscripts);
+- block highlighting;
+- block alignment;
+- complete Magic LaTeX passes with each major feature disabled in turn;
+- the exact Magic LaTeX defaults configured by the Spacemacs layer, with and
+  without its symbol pass;
+- all Magic LaTeX JIT passes together;
+- AUCTeX font lock alone; and
+- AUCTeX font lock with its built-in =prettify-symbols-mode=.
+
+This measures the Lisp work caused by moving into unfontified text.  It does
+not measure glyph composition or the GUI redisplay engine; use the GUI scroll
+benchmark for that distinction.
+
+* CPU profile
+
+=latex-magic-profile.el= runs one batch benchmark scenario under Emacs' CPU
+sampling profiler and writes a fully expanded call tree.  This gives function
+attribution in addition to wall-clock comparisons:
+
+#+begin_src shell
+SPACEMACS_BENCH_PACKAGE_DIR="$HOME/.emacs.d/elpa/30.2/develop" \
+LATEX_BENCH_PROFILE_SCENARIO=spacemacs-magic \
+  emacs -Q --batch \
+  -l tests/performance/latex/latex-magic-profile.el -- \
+  "$HOME/path/to/document.tex" /tmp/latex-magic-profile.txt
+#+end_src
+
+Set =LATEX_BENCH_PROFILE_ITERATIONS= to control the number of five-viewport
+traversals (default 40).  Any scenario listed by the batch benchmark can be
+profiled.
+
+* GUI scroll benchmark
+
+=latex-scroll-benchmark.el= measures forced redisplay after jumping among five
+viewports.  It records both uncached navigation (fontification invalidated) and
+cached navigation.  The four scenarios compare ordinary AUCTeX, built-in
+symbol prettification, Magic LaTeX without its symbol pass, and the complete
+Magic LaTeX configuration used by the layer.
+
+Run this in a disposable GUI Emacs, never the primary Emacs process.  From a
+task-specific worktree, the following keeps the init directory and all runtime
+state isolated.  The new instance exits after writing the TSV file:
+
+#+begin_src shell
+SPACEMACS_BENCH_PACKAGE_DIR="$HOME/.emacs.d/elpa/30.2/develop" \
+LATEX_BENCH_ITERATIONS=5 \
+  open -W -na Emacs --args \
+  --init-directory="$PWD" -Q \
+  -l "$PWD/tests/performance/latex/latex-scroll-benchmark.el" -- \
+  "$HOME/path/to/document.tex" /tmp/latex-scroll.tsv
+#+end_src
+
+* Reference measurements
+
+These are diagnostic baselines, not test thresholds.  They were collected on
+2026-08-30 with GNU Emacs 30.2 on an Apple M3 Ultra Mac Studio.  Each row is 50
+samples across five viewports.  The source documents remain outside the
+repository.
+
+The batch benchmark isolates the JIT/fontification cost.  =spacemacs-magic=
+uses the layer's configuration (symbols, su/subscripts, and block highlighting
+enabled; block alignment disabled).  Times are milliseconds:
+
+| Document                       | KiB | Scenario                   | Median | p95  | Mean overlays |
+|--------------------------------+-----+----------------------------+--------+------+---------------|
+| =final-review.tex=             | 222 | =spacemacs-magic=          |  15.09 | 65.48 |          98.0 |
+|                                |     | =spacemacs-magic-no-symbols= |   5.72 |  9.71 |          14.0 |
+|                                |     | =auctex-font-lock=          |   2.71 |  4.75 |           0.0 |
+|                                |     | =auctex-prettify=           |   2.89 |  4.90 |           0.0 |
+| =MKTG6120_Final_Exam_Prep.tex= | 144 | =spacemacs-magic=          |  12.59 | 24.41 |         125.6 |
+|                                |     | =spacemacs-magic-no-symbols= |   6.76 | 11.19 |          16.0 |
+|                                |     | =auctex-font-lock=          |   3.20 |  3.89 |           0.0 |
+|                                |     | =auctex-prettify=           |   3.54 |  4.16 |           0.0 |
+| =midterm-review.tex=           | 120 | =spacemacs-magic=          |  14.00 | 55.48 |         118.2 |
+|                                |     | =spacemacs-magic-no-symbols= |   4.07 |  7.65 |          12.0 |
+|                                |     | =auctex-font-lock=          |   3.19 |  4.02 |           0.0 |
+|                                |     | =auctex-prettify=           |   3.59 |  4.14 |           0.0 |
+
+The built-in symbol display added only 0.16--0.34 ms to the median ordinary
+AUCTeX font-lock cost in these files and created no overlays.  Disabling Magic
+LaTeX's symbol pass reduced its p95 by 54--86%.
+
+The GUI benchmark separately includes forced redisplay.  The p95 for uncached
+viewport navigation was:
+
+| Document                       | AUCTeX | AUCTeX + prettify | Magic, no symbols | Magic |
+|--------------------------------+--------+-------------------+-------------------+-------|
+| =final-review.tex=             |   2.06 |              1.91 |             22.73 | 42.90 |
+| =MKTG6120_Final_Exam_Prep.tex= |   1.88 |              1.75 |              7.42 | 49.08 |
+
+Cached redisplay was much closer (roughly 1.4--2.7 ms), indicating that the
+worst pauses arise primarily when newly visible text is fontified rather than
+from the glyph renderer alone.
+
+In a 200-viewport CPU profile of =final-review.tex=, =ml/jit-prettifier=
+accounted for 44% of all samples, almost entirely through =ml/search-regexp=.
+Ordinary AUCTeX =font-lock-fontify-region= accounted for 26%.  This independent
+function-level attribution agrees with the controlled scenario timings above.

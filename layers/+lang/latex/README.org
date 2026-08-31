@@ -65,6 +65,7 @@ Sensible defaults have been provided, however they may all be overridden in your
 | ~latex-enable-auto-fill~         | ~t~                                                                | When non-nil, enable ~auto-fill-mode~                                          |
 | ~latex-enable-folding~           | ~nil~                                                              | When non-nil, enable ~TeX-fold-mode~                                           |
 | ~latex-enable-magic~             | ~nil~                                                              | When non-nil, enable magic symbols                                             |
+| ~latex-enable-prettify-symbols~  | ~nil~                                                              | When non-nil, efficiently display TeX commands as Unicode symbols              |
 | ~latex-nofill-env~               | See [[#auto-fill][details below]]                                                  | A list of LaTeX environment name where ~auto-fill-mode~ is disabled            |
 | ~latex-refresh-preview~          | ~nil~                                                              | When non-nil, enable refreshing the preview buffer after recompiling           |
 | ~latex-view-with-pdf-tools~      | ~t~ if pdf layer is installed, else ~nil~                          | When non-nil, use =pdf-tools= for viewing output pdf files                     |
@@ -238,10 +239,28 @@ is nil.
                 '((latex :variables latex-enable-folding t)))
 #+END_SRC
 
+** Prettifying symbols
+AUCTeX supports Emacs' built-in =prettify-symbols-mode=. It displays TeX
+commands such as =\alpha= and =\sum= as their Unicode symbols without the large
+number of overlays created by =magic-latex-buffer=. This is the recommended
+option when symbol substitution is the desired feature, particularly in large
+documents:
+
+#+BEGIN_SRC emacs-lisp
+  (setq-default dotspacemacs-configuration-layers
+                '((latex :variables latex-enable-prettify-symbols t)))
+#+END_SRC
+
+When point moves onto a prettified command, Emacs can reveal its source text.
+Set =prettify-symbols-unprettify-at-point= to =t= or =right-edge= in
+=dotspacemacs/user-config= to select that behavior.
+
 ** Magic latex buffer
-To enable "magic" symbols in latex buffers, set the variable
-=latex-enable-magic= to =t=. But please note that enabling this feature can have
-a negative impact on performance, see also [[https://github.com/zk-phi/magic-latex-buffer/issues/20][this issue upstream]].
+To additionally display scaled blocks, alignment, or subscript and superscript
+text, set =latex-enable-magic= to =t=. Magic LaTeX's symbol substitution scans a
+large regular-expression table and creates overlays, so it can have a
+significant negative impact on scrolling and redisplay performance. See also
+[[https://github.com/zk-phi/magic-latex-buffer/issues/20][the upstream performance issue]].
 
 #+BEGIN_SRC emacs-lisp
   (setq-default dotspacemacs-configuration-layers
@@ -258,6 +277,17 @@ variables:
   greek letters (default =t=).
 - =magic-latex-enable-suscript=: show subscripts and superscripts (default =t=).
 - =magic-latex-enable-inline-image=: show images inline (default =nil=).
+
+To combine Magic LaTeX's other display features with the faster built-in symbol
+substitution, enable both layer variables.  The layer automatically disables
+Magic LaTeX's duplicate symbol pass in this configuration:
+
+#+BEGIN_SRC emacs-lisp
+  (setq-default dotspacemacs-configuration-layers
+                '((latex :variables
+                         latex-enable-magic t
+                         latex-enable-prettify-symbols t)))
+#+END_SRC
 
 By default, the underlying latex code is echoed in the echo area.
 

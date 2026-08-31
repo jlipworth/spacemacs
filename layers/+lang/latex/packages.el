@@ -64,6 +64,8 @@
       (add-hook 'LaTeX-mode-hook 'latex/auto-fill-mode))
     (when latex-enable-folding
       (add-hook 'LaTeX-mode-hook 'TeX-fold-mode))
+    (when latex-enable-prettify-symbols
+      (add-hook 'TeX-mode-hook #'prettify-symbols-mode))
     (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
     (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
     (add-hook 'LaTeX-mode-hook 'TeX-PDF-mode)
@@ -266,7 +268,9 @@
     (add-hook 'TeX-update-style-hook 'magic-latex-buffer)
     (setq magic-latex-enable-block-highlight t
           magic-latex-enable-suscript t
-          magic-latex-enable-pretty-symbols t
+          ;; Do not run both symbol implementations over the same buffer.
+          magic-latex-enable-pretty-symbols
+          (not latex-enable-prettify-symbols)
           magic-latex-enable-block-align nil
           magic-latex-enable-inline-image nil)))
 

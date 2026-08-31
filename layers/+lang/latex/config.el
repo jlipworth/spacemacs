@@ -79,6 +79,12 @@ Allowed values are defined in `TeX-engine-alist'. The default allowed values are
 Note that enabling this can have a negative impact on performance,
 especially when `magic-latex-enable-pretty-symbols' is t (the default).")
 
+(defvar latex-enable-prettify-symbols nil
+  "Whether to enable AUCTeX's built-in symbol prettification.
+
+This uses `prettify-symbols-mode' and is substantially lighter than the symbol
+substitution performed by `magic-latex-buffer'.")
+
 (defvar latex-nofill-env '("equation"
                            "equation*"
                            "align"
