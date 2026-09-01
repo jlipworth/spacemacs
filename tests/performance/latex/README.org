@@ -52,6 +52,26 @@ This measures the Lisp work caused by moving into unfontified text.  It does
 not measure glyph composition or the GUI redisplay engine; use the GUI scroll
 benchmark for that distinction.
 
+* Visual parity tests
+
+=latex-magic-parity-test.el= captures the source ranges, display values, faces,
+visibility, priority, and partner overlays produced by Magic LaTeX.  Its
+fixture covers static symbols, composed accents, negation, nested scripts,
+structural commands, font decoration, block sizing, and alignment.  Candidate
+prettifiers can be checked against the installed reference implementation
+without relying on subjective screenshots:
+
+#+begin_src shell
+SPACEMACS_BENCH_PACKAGE_DIR="$HOME/.emacs.d/elpa/30.2/develop" \
+  emacs -Q --batch -l ert \
+  -l tests/performance/latex/latex-magic-parity-test.el \
+  -f ert-run-tests-batch-and-exit
+#+end_src
+
+The exported =latex-magic-parity-compare-prettifiers= helper also accepts
+arbitrary document contents.  Run it over representative real documents in
+addition to the synthetic fixture before accepting an optimization.
+
 * CPU profile
 
 =latex-magic-profile.el= runs one batch benchmark scenario under Emacs' CPU
