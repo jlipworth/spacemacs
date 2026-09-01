@@ -37,7 +37,12 @@
     flyspell
     ggtags
     (lsp-latex :requires lsp-mode)
-    (magic-latex-buffer :toggle latex-enable-magic)
+    (magic-latex-buffer
+     :location (recipe
+                :fetcher github
+                :repo "jlipworth/magic-latex-buffer"
+                :commit "defdb24eb3ea0832e13ec488b778d6ea263156eb")
+     :toggle latex-enable-magic)
     smartparens
     (reftex :location built-in)
     typo
