@@ -66,6 +66,73 @@
                   '(nil . ((inhibit-same-window . t))))))
       (spacemacs-buffer/warning "Latex Layer: latex-view-with-pdf-tools is non-nil but pdf layer is not installed, this setting will have no effect."))))
 
+(defun spacemacs//latex-magic-search-symbol (regexp bound point-safe)
+  "Search forward for Magic LaTeX symbol REGEXP before BOUND.
+
+Skip escaped commands, comments, verbatim text, and a match containing point
+when POINT-SAFE is non-nil.  Return nil instead of signaling an error when no
+valid match remains.  Match data describes the successful match."
+  (let ((case-fold-search nil)
+        found
+        valid)
+    (while
+        (progn
+          (setq found
+                (condition-case nil
+                    (re-search-forward regexp bound t)
+                  (invalid-regexp nil)))
+          (when found
+            (setq valid
+                  (save-match-data
+                    (save-excursion
+                      (and (goto-char (match-beginning 0))
+                           (not (and point-safe
+                                     (or (null ml/jit-point)
+                                         (and (< (point) ml/jit-point)
+                                              (< ml/jit-point
+                                                 (match-end 0))))))
+                           (looking-back "\\([^\\\\]\\|^\\)\\(\\\\\\\\\\)*"
+                                         (point-min))
+                           (not (ml/skip-comments-and-verbs)))))))
+          (and found (not valid))))
+    found))
+
+(defun spacemacs//latex-magic-prettify-symbols (beg end)
+  "Create Magic LaTeX symbol overlays between BEG and END."
+  (dolist (symbol ml/symbols)
+    (save-excursion
+      (goto-char beg)
+      (let ((regexp (car symbol)))
+        (while (spacemacs//latex-magic-search-symbol regexp end t)
+          (let* ((old-overlay
+                  (ml/overlay-at (match-beginning 0)
+                                 'category 'ml/ov-pretty))
+                 (priority-base
+                  (and old-overlay
+                       (or (overlay-get old-overlay 'priority) 1)))
+                 (old-display
+                  (and old-overlay (overlay-get old-overlay 'display))))
+            (unless (stringp old-display)
+              (ml/make-pretty-overlay
+               (match-beginning 0) (match-end 0)
+               'priority (when old-overlay (1+ priority-base))
+               'display
+               (propertize (eval (cdr symbol)) 'display old-display)))))))))
+
+(defun spacemacs//latex-magic-jit-prettifier (function beg end)
+  "Run Magic LaTeX prettifier FUNCTION over BEG through END efficiently.
+
+The package implementation still creates subscript and superscript overlays.
+Its exception-driven symbol pass is replaced with
+`spacemacs//latex-magic-prettify-symbols'."
+  (if (not latex-enable-magic-symbols-optimization)
+      (funcall function beg end)
+    (let ((pretty-symbols magic-latex-enable-pretty-symbols))
+      (let ((magic-latex-enable-pretty-symbols nil))
+        (funcall function beg end))
+      (when pretty-symbols
+        (spacemacs//latex-magic-prettify-symbols beg end)))))
+
 (defun latex/build ()
   (interactive)
   (let ((TeX-save-query nil))

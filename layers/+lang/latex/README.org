@@ -65,6 +65,7 @@ Sensible defaults have been provided, however they may all be overridden in your
 | ~latex-enable-auto-fill~         | ~t~                                                                | When non-nil, enable ~auto-fill-mode~                                          |
 | ~latex-enable-folding~           | ~nil~                                                              | When non-nil, enable ~TeX-fold-mode~                                           |
 | ~latex-enable-magic~             | ~nil~                                                              | When non-nil, enable magic symbols                                             |
+| ~latex-enable-magic-symbols-optimization~ | ~t~                                                       | When non-nil, avoid exception-driven searches in Magic LaTeX's symbol pass     |
 | ~latex-enable-prettify-symbols~  | ~nil~                                                              | When non-nil, efficiently display TeX commands as Unicode symbols              |
 | ~latex-nofill-env~               | See [[#auto-fill][details below]]                                                  | A list of LaTeX environment name where ~auto-fill-mode~ is disabled            |
 | ~latex-refresh-preview~          | ~nil~                                                              | When non-nil, enable refreshing the preview buffer after recompiling           |
@@ -251,6 +252,11 @@ documents:
                 '((latex :variables latex-enable-prettify-symbols t)))
 #+END_SRC
 
+This is not full visual parity with Magic LaTeX.  It covers AUCTeX's command to
+Unicode mappings, but does not reproduce Magic LaTeX's structural replacements
+for =\begin=, =\end=, =\item=, spacing and line-break commands; its dynamic
+accent composition; or its script and block presentation.
+
 When point moves onto a prettified command, Emacs can reveal its source text.
 Set =prettify-symbols-unprettify-at-point= to =t= or =right-edge= in
 =dotspacemacs/user-config= to select that behavior.
@@ -261,6 +267,10 @@ text, set =latex-enable-magic= to =t=. Magic LaTeX's symbol substitution scans a
 large regular-expression table and creates overlays, so it can have a
 significant negative impact on scrolling and redisplay performance. See also
 [[https://github.com/zk-phi/magic-latex-buffer/issues/20][the upstream performance issue]].
+
+Spacemacs uses a behavior-preserving optimized symbol scanner by default.  Set
+=latex-enable-magic-symbols-optimization= to =nil= to compare against the
+package implementation or to work around an unexpected incompatibility.
 
 #+BEGIN_SRC emacs-lisp
   (setq-default dotspacemacs-configuration-layers

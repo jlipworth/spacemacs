@@ -79,6 +79,12 @@ Allowed values are defined in `TeX-engine-alist'. The default allowed values are
 Note that enabling this can have a negative impact on performance,
 especially when `magic-latex-enable-pretty-symbols' is t (the default).")
 
+(defvar latex-enable-magic-symbols-optimization t
+  "Whether to use the Spacemacs optimized Magic LaTeX symbol scanner.
+
+The optimized scanner preserves Magic LaTeX's overlays and visual output while
+avoiding exceptions for ordinary unsuccessful regular-expression searches.")
+
 (defvar latex-enable-prettify-symbols nil
   "Whether to enable AUCTeX's built-in symbol prettification.
 

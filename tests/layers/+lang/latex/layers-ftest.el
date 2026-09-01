@@ -25,4 +25,7 @@
     (should prettify-symbols-mode)
     (should (assoc "\\alpha" prettify-symbols-alist))
     (require 'magic-latex-buffer)
-    (should-not magic-latex-enable-pretty-symbols)))
+    (should-not magic-latex-enable-pretty-symbols)
+    (should
+     (advice-member-p #'spacemacs//latex-magic-jit-prettifier
+                      'ml/jit-prettifier))))

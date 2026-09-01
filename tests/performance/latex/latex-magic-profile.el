@@ -93,7 +93,8 @@
                 (lambda (fraction)
                   (save-excursion
                     (latex-magic-benchmark--region-at fraction lines)))
-                latex-magic-benchmark--positions)))
+                latex-magic-benchmark--positions))
+              (ml/jit-point (point-max)))
           ;; Prime one-time regexp setup before starting the sampler.
           (goto-char (caar regions))
           (funcall scenario (caar regions) (cdar regions))

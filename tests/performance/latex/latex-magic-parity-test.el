@@ -39,6 +39,16 @@
 (require 'tex)
 (require 'magic-latex-buffer)
 
+(load (expand-file-name
+       "layers/+lang/latex/funcs.el"
+       (file-name-concat
+        (file-name-directory (or load-file-name buffer-file-name)) "../../.."))
+      nil t)
+
+(defvar latex-enable-magic-symbols-optimization)
+(declare-function spacemacs//latex-magic-jit-prettifier
+                  "../../../layers/+lang/latex/funcs" (function beg end))
+
 (defconst latex-magic-parity--fixture
   (concat
    "\\documentclass{article}\n"
@@ -171,6 +181,12 @@ When CONTENT is nil, use `latex-magic-parity--fixture'."
   (equal (latex-magic-parity-render reference content)
          (latex-magic-parity-render candidate content)))
 
+(defun latex-magic-parity--optimized-prettifier (beg end)
+  "Run the optimized prettifier over BEG through END."
+  (let ((latex-enable-magic-symbols-optimization t))
+    (spacemacs//latex-magic-jit-prettifier
+     (symbol-function 'ml/jit-prettifier) beg end)))
+
 (defun latex-magic-parity--records-for-source (snapshot source)
   "Return records in SNAPSHOT whose source text equals SOURCE."
   (seq-filter (lambda (record) (equal source (nth 2 record))) snapshot))
@@ -179,6 +195,20 @@ When CONTENT is nil, use `latex-magic-parity--fixture'."
   (should
    (latex-magic-parity-compare-prettifiers
     #'ml/jit-prettifier #'ml/jit-prettifier)))
+
+(ert-deftest latex-magic-parity-optimized-matches-reference ()
+  (should
+   (latex-magic-parity-compare-prettifiers
+    #'ml/jit-prettifier #'latex-magic-parity--optimized-prettifier))
+  (when-let ((files (getenv "LATEX_BENCH_PARITY_FILES")))
+    (dolist (file (split-string files (regexp-quote path-separator) t))
+      (let ((content (with-temp-buffer
+                       (insert-file-contents file)
+                       (buffer-string))))
+        (should
+         (latex-magic-parity-compare-prettifiers
+          #'ml/jit-prettifier #'latex-magic-parity--optimized-prettifier
+          content))))))
 
 (ert-deftest latex-magic-parity-fixture-covers-symbol-families ()
   (let ((snapshot (latex-magic-parity-render #'ml/jit-prettifier)))

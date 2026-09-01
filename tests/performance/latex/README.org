@@ -44,6 +44,7 @@ garbage-collection time, and overlays created.  It isolates these scenarios:
 - complete Magic LaTeX passes with each major feature disabled in turn;
 - the exact Magic LaTeX defaults configured by the Spacemacs layer, with and
   without its symbol pass;
+- the same Spacemacs configuration with the exception-free optimized scanner;
 - all Magic LaTeX JIT passes together;
 - AUCTeX font lock alone; and
 - AUCTeX font lock with its built-in =prettify-symbols-mode=.
@@ -63,6 +64,7 @@ without relying on subjective screenshots:
 
 #+begin_src shell
 SPACEMACS_BENCH_PACKAGE_DIR="$HOME/.emacs.d/elpa/30.2/develop" \
+LATEX_BENCH_PARITY_FILES="$HOME/one.tex:$HOME/two.tex" \
   emacs -Q --batch -l ert \
   -l tests/performance/latex/latex-magic-parity-test.el \
   -f ert-run-tests-batch-and-exit
@@ -70,7 +72,9 @@ SPACEMACS_BENCH_PACKAGE_DIR="$HOME/.emacs.d/elpa/30.2/develop" \
 
 The exported =latex-magic-parity-compare-prettifiers= helper also accepts
 arbitrary document contents.  Run it over representative real documents in
-addition to the synthetic fixture before accepting an optimization.
+addition to the synthetic fixture before accepting an optimization.  Set
+=LATEX_BENCH_PARITY_FILES= to a platform-path-separator-delimited list to run
+the optimized-versus-reference assertion over real documents automatically.
 
 * CPU profile
 
@@ -94,9 +98,9 @@ profiled.
 
 =latex-scroll-benchmark.el= measures forced redisplay after jumping among five
 viewports.  It records both uncached navigation (fontification invalidated) and
-cached navigation.  The four scenarios compare ordinary AUCTeX, built-in
-symbol prettification, Magic LaTeX without its symbol pass, and the complete
-Magic LaTeX configuration used by the layer.
+cached navigation.  The scenarios compare ordinary AUCTeX, built-in symbol
+prettification, Magic LaTeX without its symbol pass, and the complete Magic
+LaTeX configuration with both reference and optimized symbol scanners.
 
 Run this in a disposable GUI Emacs, never the primary Emacs process.  From a
 task-specific worktree, the following keeps the init directory and all runtime
@@ -124,34 +128,43 @@ enabled; block alignment disabled).  Times are milliseconds:
 
 | Document                       | KiB | Scenario                   | Median | p95  | Mean overlays |
 |--------------------------------+-----+----------------------------+--------+------+---------------|
-| =final-review.tex=             | 222 | =spacemacs-magic=          |  15.09 | 65.48 |          98.0 |
-|                                |     | =spacemacs-magic-no-symbols= |   5.72 |  9.71 |          14.0 |
-|                                |     | =auctex-font-lock=          |   2.71 |  4.75 |           0.0 |
-|                                |     | =auctex-prettify=           |   2.89 |  4.90 |           0.0 |
-| =MKTG6120_Final_Exam_Prep.tex= | 144 | =spacemacs-magic=          |  12.59 | 24.41 |         125.6 |
-|                                |     | =spacemacs-magic-no-symbols= |   6.76 | 11.19 |          16.0 |
-|                                |     | =auctex-font-lock=          |   3.20 |  3.89 |           0.0 |
-|                                |     | =auctex-prettify=           |   3.54 |  4.16 |           0.0 |
-| =midterm-review.tex=           | 120 | =spacemacs-magic=          |  14.00 | 55.48 |         118.2 |
-|                                |     | =spacemacs-magic-no-symbols= |   4.07 |  7.65 |          12.0 |
-|                                |     | =auctex-font-lock=          |   3.19 |  4.02 |           0.0 |
-|                                |     | =auctex-prettify=           |   3.59 |  4.14 |           0.0 |
+| =final-review.tex=             | 222 | =spacemacs-magic=          |  14.95 | 66.79 |          98.0 |
+|                                |     | =spacemacs-magic-optimized= |  12.32 | 62.94 |          98.0 |
+|                                |     | =spacemacs-magic-no-symbols= |   5.78 |  9.68 |          14.0 |
+|                                |     | =auctex-font-lock=          |   2.83 |  4.88 |           0.0 |
+|                                |     | =auctex-prettify=           |   3.01 |  5.16 |           0.0 |
+| =MKTG6120_Final_Exam_Prep.tex= | 144 | =spacemacs-magic=          |  13.14 | 25.72 |         125.6 |
+|                                |     | =spacemacs-magic-optimized= |  10.14 | 21.81 |         125.6 |
+|                                |     | =spacemacs-magic-no-symbols= |   7.11 | 11.81 |          16.0 |
+|                                |     | =auctex-font-lock=          |   3.17 |  4.19 |           0.0 |
+|                                |     | =auctex-prettify=           |   3.45 |  4.36 |           0.0 |
+| =midterm-review.tex=           | 120 | =spacemacs-magic=          |  14.50 | 57.35 |         118.2 |
+|                                |     | =spacemacs-magic-optimized= |  11.21 | 53.38 |         118.2 |
+|                                |     | =spacemacs-magic-no-symbols= |   4.14 |  8.02 |          12.0 |
+|                                |     | =auctex-font-lock=          |   3.47 |  4.27 |           0.0 |
+|                                |     | =auctex-prettify=           |   3.62 |  4.36 |           0.0 |
 
 The built-in symbol display added only 0.16--0.34 ms to the median ordinary
 AUCTeX font-lock cost in these files and created no overlays.  Disabling Magic
 LaTeX's symbol pass reduced its p95 by 54--86%.
 
+The exception-free scanner preserved every canonical overlay property on the
+synthetic parity fixture and all three real documents.  It reduced complete
+Magic LaTeX median time by 18--23% and p95 by 6--15%; mean overlay counts were
+identical.
+
 The GUI benchmark separately includes forced redisplay.  The p95 for uncached
 viewport navigation was:
 
-| Document                       | AUCTeX | AUCTeX + prettify | Magic, no symbols | Magic |
-|--------------------------------+--------+-------------------+-------------------+-------|
-| =final-review.tex=             |   2.06 |              1.91 |             22.73 | 42.90 |
-| =MKTG6120_Final_Exam_Prep.tex= |   1.88 |              1.75 |              7.42 | 49.08 |
+| Document                       | AUCTeX | AUCTeX + prettify | Magic, no symbols | Magic reference | Magic optimized |
+|--------------------------------+--------+-------------------+-------------------+-----------------+-----------------|
+| =final-review.tex=             |   2.02 |              2.07 |             22.33 |           42.50 |           24.47 |
+| =MKTG6120_Final_Exam_Prep.tex= |   1.93 |              1.87 |              7.35 |           60.54 |           15.25 |
 
-Cached redisplay was much closer (roughly 1.4--2.7 ms), indicating that the
+Cached redisplay was much closer (roughly 1.4--2.9 ms), indicating that the
 worst pauses arise primarily when newly visible text is fontified rather than
-from the glyph renderer alone.
+from the glyph renderer alone.  The optimized scanner reduced the uncached
+Magic p95 by 42% and 75% in these two controlled runs.
 
 In a 200-viewport CPU profile of =final-review.tex=, =ml/jit-prettifier=
 accounted for 44% of all samples, almost entirely through =ml/search-regexp=.

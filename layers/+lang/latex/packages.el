@@ -266,6 +266,9 @@
     :spacediminish (magic-latex-buffer " ✦" " mL")
     :init
     (add-hook 'TeX-update-style-hook 'magic-latex-buffer)
+    (when latex-enable-magic-symbols-optimization
+      (advice-add 'ml/jit-prettifier :around
+                  #'spacemacs//latex-magic-jit-prettifier))
     (setq magic-latex-enable-block-highlight t
           magic-latex-enable-suscript t
           ;; Do not run both symbol implementations over the same buffer.

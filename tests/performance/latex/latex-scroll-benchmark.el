@@ -38,6 +38,21 @@
 (require 'tex)
 (require 'magic-latex-buffer)
 
+(load (expand-file-name
+       "layers/+lang/latex/funcs.el"
+       (file-name-concat
+        (file-name-directory (or load-file-name buffer-file-name)) "../../.."))
+      nil t)
+
+(defvar latex-enable-magic-symbols-optimization)
+(declare-function spacemacs//latex-magic-jit-prettifier
+                  "../../../layers/+lang/latex/funcs" (function beg end))
+
+(unless (advice-member-p #'spacemacs//latex-magic-jit-prettifier
+                         'ml/jit-prettifier)
+  (advice-add 'ml/jit-prettifier :around
+              #'spacemacs//latex-magic-jit-prettifier))
+
 (defconst latex-scroll-benchmark--positions '(0.02 0.25 0.50 0.75 0.95))
 
 (defun latex-scroll-benchmark--env-number (name default)
@@ -72,14 +87,17 @@
   (pcase scenario
     ('auctex-font-lock nil)
     ('auctex-prettify (prettify-symbols-mode 1))
-    ((or 'magic 'magic-no-symbols)
+    ((or 'magic-reference 'magic-optimized 'magic-no-symbols)
      ;; Match the layer's defaults: highlighting and su/subscripts are on,
      ;; while block alignment and inline images are off.
      (setq-local magic-latex-enable-block-highlight t
                  magic-latex-enable-suscript t
                  magic-latex-enable-block-align nil
                  magic-latex-enable-inline-image nil
-                 magic-latex-enable-pretty-symbols (eq scenario 'magic))
+                 magic-latex-enable-pretty-symbols
+                 (not (eq scenario 'magic-no-symbols))
+                 latex-enable-magic-symbols-optimization
+                 (eq scenario 'magic-optimized))
      (magic-latex-buffer 1))))
 
 (defun latex-scroll-benchmark--redisplay (window region cold)
@@ -169,7 +187,8 @@ regions of LINES lines."
       (with-temp-file output
         (insert "source\tscenario\tphase\tsamples\tmean_s\tmedian_s\tp95_s\tmax_s\n")
         (dolist (scenario
-                 '(auctex-font-lock auctex-prettify magic-no-symbols magic))
+                 '(auctex-font-lock auctex-prettify magic-no-symbols
+                                    magic-reference magic-optimized))
           (latex-scroll-benchmark--run-scenario
            (current-buffer) (expand-file-name source) content
            scenario iterations lines)))))

@@ -38,6 +38,16 @@
 (require 'tex)
 (require 'magic-latex-buffer)
 
+(load (expand-file-name
+       "layers/+lang/latex/funcs.el"
+       (file-name-concat
+        (file-name-directory (or load-file-name buffer-file-name)) "../../.."))
+      nil t)
+
+(defvar latex-enable-magic-symbols-optimization)
+(declare-function spacemacs//latex-magic-jit-prettifier
+                  "../../../layers/+lang/latex/funcs" (function beg end))
+
 (defconst latex-magic-benchmark--positions '(0.02 0.25 0.50 0.75 0.95))
 
 (defconst latex-magic-benchmark--synthetic-fragment
@@ -135,6 +145,19 @@ features."
         (magic-latex-enable-block-align align))
     (latex-magic-benchmark--run-all beg end)))
 
+(defun latex-magic-benchmark--run-spacemacs-optimized (beg end)
+  "Run the optimized Spacemacs Magic LaTeX configuration over BEG and END."
+  (let ((magic-latex-enable-pretty-symbols t)
+        (magic-latex-enable-suscript t)
+        (magic-latex-enable-block-highlight t)
+        (magic-latex-enable-block-align nil)
+        (latex-enable-magic-symbols-optimization t))
+    (font-lock-fontify-region beg end)
+    (ml/jit-block-aligner beg end)
+    (ml/jit-block-highlighter beg end)
+    (spacemacs//latex-magic-jit-prettifier
+     (symbol-function 'ml/jit-prettifier) beg end)))
+
 (defun latex-magic-benchmark--run-font-lock (beg end)
   "Refontify BEG through END with AUCTeX's ordinary font lock."
   (font-lock-unfontify-region beg end)
@@ -170,6 +193,8 @@ features."
     (spacemacs-magic . ,(lambda (beg end)
                           (latex-magic-benchmark--run-all-with
                            beg end t t t nil)))
+    (spacemacs-magic-optimized .
+                               latex-magic-benchmark--run-spacemacs-optimized)
     (all . latex-magic-benchmark--run-all)
     ;; Keep these last: enabling `prettify-symbols-mode' changes subsequent
     ;; ordinary font-lock passes in this buffer.
