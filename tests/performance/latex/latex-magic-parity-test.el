@@ -210,6 +210,20 @@ When CONTENT is nil, use `latex-magic-parity--fixture'."
           #'ml/jit-prettifier #'latex-magic-parity--optimized-prettifier
           content))))))
 
+(ert-deftest latex-magic-parity-search-plan-preserves-rules ()
+  (let* ((plan (spacemacs//latex-magic-build-symbol-plan))
+         (rules
+          (apply
+           #'+
+           (mapcar
+            (lambda (segment)
+              (if (eq 'exact (car segment))
+                  (hash-table-count (nth 2 segment))
+                1))
+            plan))))
+    (should (= (length ml/symbols) rules))
+    (should (< (length plan) (length ml/symbols)))))
+
 (ert-deftest latex-magic-parity-fixture-covers-symbol-families ()
   (let ((snapshot (latex-magic-parity-render #'ml/jit-prettifier)))
     (dolist (source

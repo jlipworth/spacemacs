@@ -97,27 +97,91 @@ valid match remains.  Match data describes the successful match."
           (and found (not valid))))
     found))
 
+(defvar spacemacs--latex-magic-symbol-plan nil
+  "Cached segmented search plan for `ml/symbols'.")
+
+(defvar spacemacs--latex-magic-symbol-plan-source nil
+  "Value of `ml/symbols' used to build the cached search plan.")
+
+(defun spacemacs//latex-magic-exact-symbol-source (symbol)
+  "Return literal command text when SYMBOL has a simple exact regexp."
+  (let ((regexp (car symbol)))
+    (when (and (string-prefix-p "\\\\" regexp)
+               (string-suffix-p "\\>" regexp)
+               (> (length regexp) 4)
+               (string-match-p "\\`[[:alpha:]@]+\\'"
+                               (substring regexp 2 -2)))
+      (concat "\\" (substring regexp 2 -2)))))
+
+(defun spacemacs//latex-magic-exact-segment (symbols)
+  "Return a combined search-plan segment for exact SYMBOLS."
+  (let ((table (make-hash-table :test #'equal))
+        sources)
+    (dolist (symbol symbols)
+      (let ((source (spacemacs//latex-magic-exact-symbol-source symbol)))
+        (puthash source symbol table)
+        (push source sources)))
+    (list 'exact
+          (concat (regexp-opt (nreverse sources)) "\\>")
+          table)))
+
+(defun spacemacs//latex-magic-build-symbol-plan ()
+  "Build an order-preserving segmented search plan for `ml/symbols'."
+  (let ((counts (make-hash-table :test #'equal))
+        exact-run
+        plan)
+    (dolist (symbol ml/symbols)
+      (when-let ((source (spacemacs//latex-magic-exact-symbol-source symbol)))
+        (puthash source (1+ (gethash source counts 0)) counts)))
+    (cl-labels
+        ((flush-exact-run
+          ()
+          (when exact-run
+            (push (spacemacs//latex-magic-exact-segment
+                   (nreverse exact-run))
+                  plan)
+            (setq exact-run nil))))
+      (dolist (symbol ml/symbols)
+        (let ((source (spacemacs//latex-magic-exact-symbol-source symbol)))
+          (if (and source (= 1 (gethash source counts)))
+              (push symbol exact-run)
+            (flush-exact-run)
+            (push (list 'regexp (car symbol) symbol) plan))))
+      (flush-exact-run))
+    (nreverse plan)))
+
+(defun spacemacs//latex-magic-symbol-plan ()
+  "Return a cached search plan corresponding to `ml/symbols'."
+  (unless (eq spacemacs--latex-magic-symbol-plan-source ml/symbols)
+    (setq spacemacs--latex-magic-symbol-plan-source ml/symbols
+          spacemacs--latex-magic-symbol-plan
+          (spacemacs//latex-magic-build-symbol-plan)))
+  spacemacs--latex-magic-symbol-plan)
+
+(defun spacemacs//latex-magic-apply-symbol (symbol)
+  "Create a Magic LaTeX overlay for the current SYMBOL match."
+  (let* ((old-overlay
+          (ml/overlay-at (match-beginning 0) 'category 'ml/ov-pretty))
+         (priority-base
+          (and old-overlay (or (overlay-get old-overlay 'priority) 1)))
+         (old-display (and old-overlay (overlay-get old-overlay 'display))))
+    (unless (stringp old-display)
+      (ml/make-pretty-overlay
+       (match-beginning 0) (match-end 0)
+       'priority (when old-overlay (1+ priority-base))
+       'display (propertize (eval (cdr symbol)) 'display old-display)))))
+
 (defun spacemacs//latex-magic-prettify-symbols (beg end)
   "Create Magic LaTeX symbol overlays between BEG and END."
-  (dolist (symbol ml/symbols)
+  (dolist (segment (spacemacs//latex-magic-symbol-plan))
     (save-excursion
       (goto-char beg)
-      (let ((regexp (car symbol)))
+      (let ((regexp (cadr segment)))
         (while (spacemacs//latex-magic-search-symbol regexp end t)
-          (let* ((old-overlay
-                  (ml/overlay-at (match-beginning 0)
-                                 'category 'ml/ov-pretty))
-                 (priority-base
-                  (and old-overlay
-                       (or (overlay-get old-overlay 'priority) 1)))
-                 (old-display
-                  (and old-overlay (overlay-get old-overlay 'display))))
-            (unless (stringp old-display)
-              (ml/make-pretty-overlay
-               (match-beginning 0) (match-end 0)
-               'priority (when old-overlay (1+ priority-base))
-               'display
-               (propertize (eval (cdr symbol)) 'display old-display)))))))))
+          (spacemacs//latex-magic-apply-symbol
+           (if (eq 'exact (car segment))
+               (gethash (match-string-no-properties 0) (nth 2 segment))
+             (nth 2 segment))))))))
 
 (defun spacemacs//latex-magic-jit-prettifier (function beg end)
   "Run Magic LaTeX prettifier FUNCTION over BEG through END efficiently.
