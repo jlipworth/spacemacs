@@ -50,6 +50,9 @@
 (declare-function spacemacs//latex-magic-search-regexp-advice
                   "../../../layers/+lang/latex/funcs"
                   (function regexp &optional bound backward point-safe))
+(declare-function spacemacs//latex-magic-skip-blocks-advice
+                  "../../../layers/+lang/latex/funcs"
+                  (function n &optional exclusive backward brace-only))
 
 (defconst latex-magic-benchmark--positions '(0.02 0.25 0.50 0.75 0.95))
 
@@ -155,11 +158,16 @@ features."
         (magic-latex-enable-block-highlight t)
         (magic-latex-enable-block-align nil)
         (latex-enable-magic-symbols-optimization t)
-        (reference-search (symbol-function 'ml/search-regexp)))
+        (reference-search (symbol-function 'ml/search-regexp))
+        (reference-skip (symbol-function 'ml/skip-blocks)))
     (cl-letf (((symbol-function 'ml/search-regexp)
                (lambda (regexp &optional bound backward point-safe)
                  (spacemacs//latex-magic-search-regexp-advice
-                  reference-search regexp bound backward point-safe))))
+                  reference-search regexp bound backward point-safe)))
+              ((symbol-function 'ml/skip-blocks)
+               (lambda (n &optional exclusive backward brace-only)
+                 (spacemacs//latex-magic-skip-blocks-advice
+                  reference-skip n exclusive backward brace-only))))
       (font-lock-fontify-region beg end)
       (ml/jit-block-aligner beg end)
       (ml/jit-block-highlighter beg end)

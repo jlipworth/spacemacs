@@ -58,6 +58,12 @@
                   (function regexp &optional bound backward point-safe))
 (declare-function spacemacs//latex-magic-unescaped-p
                   "../../../layers/+lang/latex/funcs" (position))
+(declare-function spacemacs//latex-magic-skip-blocks
+                  "../../../layers/+lang/latex/funcs"
+                  (n &optional exclusive backward brace-only))
+(declare-function spacemacs//latex-magic-skip-blocks-advice
+                  "../../../layers/+lang/latex/funcs"
+                  (function n &optional exclusive backward brace-only))
 
 (defconst latex-magic-parity--fixture
   (concat
@@ -200,13 +206,90 @@ When CONTENT is nil, use `latex-magic-parity--fixture'."
 (defun latex-magic-parity--optimized-render (&optional content)
   "Render CONTENT with the full optimized Magic LaTeX search pipeline."
   (let ((reference-search (symbol-function 'ml/search-regexp))
+        (reference-skip (symbol-function 'ml/skip-blocks))
         (latex-enable-magic-symbols-optimization t))
     (cl-letf (((symbol-function 'ml/search-regexp)
                (lambda (regexp &optional bound backward point-safe)
                  (spacemacs//latex-magic-search-regexp-advice
-                  reference-search regexp bound backward point-safe))))
+                  reference-search regexp bound backward point-safe)))
+              ((symbol-function 'ml/skip-blocks)
+               (lambda (n &optional exclusive backward brace-only)
+                 (spacemacs//latex-magic-skip-blocks-advice
+                  reference-skip n exclusive backward brace-only))))
       (latex-magic-parity-render
        #'latex-magic-parity--optimized-prettifier content))))
+
+(defun latex-magic-parity--render-region (prettifier content beg end)
+  "Render CONTENT from BEG through END with PRETTIFIER."
+  (with-temp-buffer
+    (insert content)
+    (setq buffer-file-name "magic-latex-region-parity.tex")
+    (LaTeX-mode)
+    (font-lock-mode 1)
+    (font-lock-fontify-region (point-min) (point-max))
+    (set-syntax-table ml/syntax-table)
+    (let ((magic-latex-enable-pretty-symbols t)
+          (magic-latex-enable-suscript t)
+          (magic-latex-enable-block-highlight t)
+          (magic-latex-enable-block-align nil)
+          (ml/jit-point (point-max)))
+      (goto-char beg)
+      (ml/jit-block-highlighter beg end)
+      (goto-char beg)
+      (funcall prettifier beg end)
+      (latex-magic-parity--snapshot))))
+
+(defun latex-magic-parity--optimized-region (content beg end)
+  "Render CONTENT from BEG through END using every optimized Magic pass."
+  (let ((reference-search (symbol-function 'ml/search-regexp))
+        (reference-skip (symbol-function 'ml/skip-blocks))
+        (latex-enable-magic-symbols-optimization t))
+    (cl-letf (((symbol-function 'ml/search-regexp)
+               (lambda (regexp &optional bound backward point-safe)
+                 (spacemacs//latex-magic-search-regexp-advice
+                  reference-search regexp bound backward point-safe)))
+              ((symbol-function 'ml/skip-blocks)
+               (lambda (n &optional exclusive backward brace-only)
+                 (spacemacs//latex-magic-skip-blocks-advice
+                  reference-skip n exclusive backward brace-only))))
+      (latex-magic-parity--render-region
+       #'latex-magic-parity--optimized-prettifier content beg end))))
+
+(defun latex-magic-parity--region-at (content fraction lines)
+  "Return an approximately LINES-line region at FRACTION through CONTENT."
+  (with-temp-buffer
+    (insert content)
+    (goto-char (+ (point-min)
+                  (floor (* fraction (- (point-max) (point-min))))))
+    (let ((beg (line-beginning-position)))
+      (forward-line lines)
+      (cons beg (point)))))
+
+(defun latex-magic-parity--span-visible-p (start end beg limit)
+  "Return non-nil when START through END can affect BEG through LIMIT."
+  (if (= start end)
+      (and (<= beg start) (< start limit))
+    (and (< start limit) (> end beg))))
+
+(defun latex-magic-parity--record-visible-p (record beg end)
+  "Return non-nil when overlay RECORD can affect BEG through END."
+  (or (latex-magic-parity--span-visible-p
+       (nth 0 record) (nth 1 record) beg end)
+      (when-let ((partner (nth 5 record)))
+        (latex-magic-parity--span-visible-p
+         (nth 0 partner) (nth 1 partner) beg end))
+      (seq-some
+       (lambda (partner)
+         (latex-magic-parity--span-visible-p
+          (nth 0 partner) (nth 1 partner) beg end))
+       (nth 6 record))))
+
+(defun latex-magic-parity--visible-snapshot (snapshot beg end)
+  "Return records in SNAPSHOT which can affect BEG through END."
+  (seq-filter
+   (lambda (record)
+     (latex-magic-parity--record-visible-p record beg end))
+   snapshot))
 
 (defun latex-magic-parity--records-for-source (snapshot source)
   "Return records in SNAPSHOT whose source text equals SOURCE."
@@ -244,6 +327,34 @@ IGNORED-RANGE is non-nil, apply a comment face between its two positions."
                  #'spacemacs//latex-magic-search-regexp
                  regexp nil backward point-safe)))))))
 
+(defun latex-magic-parity--skip-outcome
+    (skip n exclusive backward brace-only)
+  "Capture the observable result of calling block function SKIP."
+  (condition-case error-data
+      (let ((value (funcall skip n exclusive backward brace-only)))
+        (list 'success value (point) (match-data t)))
+    (error
+     (list 'error (car error-data) (error-message-string error-data)
+           (point) (match-data t)))))
+
+(defun latex-magic-parity--compare-block-skips
+    (content start n &optional exclusive backward brace-only)
+  "Compare reference and iterative block skipping over CONTENT from START."
+  (with-temp-buffer
+    (insert content)
+    (goto-char start)
+    (set-match-data (list start start))
+    (let ((reference
+           (latex-magic-parity--skip-outcome
+            #'ml/skip-blocks n exclusive backward brace-only)))
+      (goto-char start)
+      (set-match-data (list start start))
+      (should
+       (equal reference
+              (latex-magic-parity--skip-outcome
+               #'spacemacs//latex-magic-skip-blocks
+               n exclusive backward brace-only))))))
+
 (ert-deftest latex-magic-parity-reference-is-deterministic ()
   (should
    (latex-magic-parity-compare-prettifiers
@@ -261,6 +372,25 @@ IGNORED-RANGE is non-nil, apply a comment face between its two positions."
         (should
          (equal (latex-magic-parity-render #'ml/jit-prettifier content)
                 (latex-magic-parity--optimized-render content)))))))
+
+(ert-deftest latex-magic-parity-optimized-viewports-match-reference ()
+  (when-let ((files (getenv "LATEX_BENCH_PARITY_FILES")))
+    (dolist (file (split-string files (regexp-quote path-separator) t))
+      (let ((content (with-temp-buffer
+                       (insert-file-contents file)
+                       (buffer-string))))
+        (dolist (fraction '(0.02 0.25 0.50 0.75 0.95))
+          (pcase-let ((`(,beg . ,end)
+                       (latex-magic-parity--region-at content fraction 80)))
+            (should
+             (equal
+              (latex-magic-parity--visible-snapshot
+               (latex-magic-parity--render-region
+                #'ml/jit-prettifier content beg end)
+               beg end)
+              (latex-magic-parity--visible-snapshot
+               (latex-magic-parity--optimized-region content beg end)
+               beg end)))))))))
 
 (ert-deftest latex-magic-parity-search-plan-preserves-rules ()
   (let* ((plan (spacemacs//latex-magic-build-symbol-plan))
@@ -308,6 +438,25 @@ IGNORED-RANGE is non-nil, apply a comment face between its two positions."
     ;; Failure, including invalid regexps, retains the starting point and error.
     (latex-magic-parity--compare-searches "\\\\alpha" alpha 1 1)
     (latex-magic-parity--compare-searches "text" "[" 3 1)))
+
+(ert-deftest latex-magic-parity-iterative-block-skip-matches-reference ()
+  (dolist (exclusive '(nil t))
+    (latex-magic-parity--compare-block-skips
+     "{outer {inner} tail}" 1 0 exclusive)
+    (latex-magic-parity--compare-block-skips
+     "{outer {inner} tail}" 21 0 exclusive t)
+    (latex-magic-parity--compare-block-skips
+     "\\begin{center}text\\end{center}" 1 0 exclusive))
+  (latex-magic-parity--compare-block-skips "{outer}" 1 0 nil nil t)
+  (latex-magic-parity--compare-block-skips "{" 1 0)
+  (latex-magic-parity--compare-block-skips "}" 1 0))
+
+(ert-deftest latex-magic-parity-iterative-block-skip-handles-deep-input ()
+  (with-temp-buffer
+    (insert (make-string 2000 ?{) (make-string 2000 ?}))
+    (goto-char (point-min))
+    (should (spacemacs//latex-magic-skip-blocks 0 nil nil t))
+    (should (= (point) (point-max)))))
 
 (ert-deftest latex-magic-parity-fixture-covers-symbol-families ()
   (let ((snapshot (latex-magic-parity-render #'ml/jit-prettifier)))

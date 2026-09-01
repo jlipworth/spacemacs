@@ -80,10 +80,10 @@ Note that enabling this can have a negative impact on performance,
 especially when `magic-latex-enable-pretty-symbols' is t (the default).")
 
 (defvar latex-enable-magic-symbols-optimization t
-  "Whether to use the Spacemacs optimized Magic LaTeX symbol scanner.
+  "Whether to use the Spacemacs optimized Magic LaTeX scanners.
 
-The optimized scanner preserves Magic LaTeX's overlays and visual output while
-avoiding exceptions for ordinary unsuccessful regular-expression searches.")
+The optimized scanners preserve Magic LaTeX's visual output while avoiding
+exceptions for ordinary unsuccessful searches and recursive block traversal.")
 
 (defvar latex-enable-prettify-symbols nil
   "Whether to enable AUCTeX's built-in symbol prettification.

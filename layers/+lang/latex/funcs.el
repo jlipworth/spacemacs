@@ -154,6 +154,60 @@ contract."
        regexp bound backward point-safe)
     (funcall function regexp bound backward point-safe)))
 
+(defun spacemacs//latex-magic-skip-blocks
+    (n &optional exclusive backward brace-only)
+  "Iteratively skip Magic LaTeX blocks until reaching level N.
+
+EXCLUSIVE, BACKWARD, and BRACE-ONLY have the meanings documented by
+`ml/skip-blocks'.  Preserve its point movement and error behavior without
+growing the Lisp stack for every nested delimiter."
+  (let ((start (point))
+        (regexp (if brace-only
+                    "\\({\\)\\|\\(}\\)"
+                  "\\(\\\\begin\\>\\|{\\|\\[\\)\\|\\(\\\\end\\>\\|}\\|]\\)"))
+        result)
+    (condition-case error-data
+        (save-match-data
+          (while
+              (progn
+                (condition-case nil
+                    (ml/search-regexp regexp nil backward)
+                  (error (error "unmatched blocks")))
+                (setq n
+                      (if backward
+                          (+ n
+                             (if (match-beginning 1) -1 0)
+                             (if (match-beginning 2) 1 0))
+                        (+ n
+                           (if (match-beginning 1) 1 0)
+                           (if (match-beginning 2) -1 0))))
+                (cond
+                 ((< n 0)
+                  (error "unexpected end-of-block"))
+                 ((> n 0) t)
+                 (exclusive
+                  (setq result
+                        (goto-char
+                         (if backward
+                             (match-end 0)
+                           (match-beginning 0))))
+                  nil)
+                 (t
+                  (setq result t)
+                  nil))))
+          result)
+      (error
+       (goto-char start)
+       (error (error-message-string error-data))))))
+
+(defun spacemacs//latex-magic-skip-blocks-advice
+    (function n &optional exclusive backward brace-only)
+  "Call Magic LaTeX block FUNCTION or its iterative equivalent."
+  (if latex-enable-magic-symbols-optimization
+      (spacemacs//latex-magic-skip-blocks
+       n exclusive backward brace-only)
+    (funcall function n exclusive backward brace-only)))
+
 (defvar spacemacs--latex-magic-symbol-plan nil
   "Cached segmented search plan for `ml/symbols'.")
 

@@ -50,6 +50,9 @@
 (declare-function spacemacs//latex-magic-search-regexp-advice
                   "../../../layers/+lang/latex/funcs"
                   (function regexp &optional bound backward point-safe))
+(declare-function spacemacs//latex-magic-skip-blocks-advice
+                  "../../../layers/+lang/latex/funcs"
+                  (function n &optional exclusive backward brace-only))
 
 (unless (advice-member-p #'spacemacs//latex-magic-jit-prettifier
                          'ml/jit-prettifier)
@@ -60,6 +63,11 @@
                          'ml/search-regexp)
   (advice-add 'ml/search-regexp :around
               #'spacemacs//latex-magic-search-regexp-advice))
+
+(unless (advice-member-p #'spacemacs//latex-magic-skip-blocks-advice
+                         'ml/skip-blocks)
+  (advice-add 'ml/skip-blocks :around
+              #'spacemacs//latex-magic-skip-blocks-advice))
 
 (defconst latex-scroll-benchmark--positions '(0.02 0.25 0.50 0.75 0.95))
 
@@ -83,12 +91,19 @@
     (forward-line lines)
     (cons beg (point))))
 
-(defun latex-scroll-benchmark--clear-overlays (beg end)
-  "Delete Magic LaTeX overlays between BEG and END."
-  (dolist (overlay (overlays-in beg end))
-    (when (memq (overlay-get overlay 'category)
-                '(ml/ov-pretty ml/ov-block ml/ov-align ml/ov-align-alignment))
-      (delete-overlay overlay))))
+(defun latex-scroll-benchmark--clear-overlays ()
+  "Delete every Magic LaTeX overlay and its associated partners."
+  (dolist (overlay (overlays-in (point-min) (point-max)))
+    (pcase (overlay-get overlay 'category)
+      ('ml/ov-block
+       (when-let ((partner (overlay-get overlay 'partner)))
+         (delete-overlay partner))
+       (delete-overlay overlay))
+      ('ml/ov-align
+       (mapc #'delete-overlay (overlay-get overlay 'partners))
+       (delete-overlay overlay))
+      ((or 'ml/ov-pretty 'ml/ov-align-alignment)
+       (delete-overlay overlay)))))
 
 (defun latex-scroll-benchmark--prepare (scenario)
   "Configure the current LaTeX buffer for SCENARIO."
@@ -115,7 +130,7 @@ When COLD is non-nil, invalidate fontification and Magic LaTeX overlays first,
 simulating navigation into a viewport which has not yet been displayed."
   (pcase-let ((`(,beg . ,end) region))
     (when cold
-      (latex-scroll-benchmark--clear-overlays beg end)
+      (latex-scroll-benchmark--clear-overlays)
       (font-lock-flush beg end))
     (goto-char beg)
     (set-window-point window beg)

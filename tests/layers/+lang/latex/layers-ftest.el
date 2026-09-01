@@ -31,4 +31,7 @@
                       'ml/jit-prettifier))
     (should
      (advice-member-p #'spacemacs//latex-magic-search-regexp-advice
-                      'ml/search-regexp))))
+                      'ml/search-regexp))
+    (should
+     (advice-member-p #'spacemacs//latex-magic-skip-blocks-advice
+                      'ml/skip-blocks))))

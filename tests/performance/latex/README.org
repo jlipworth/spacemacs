@@ -128,50 +128,58 @@ enabled; block alignment disabled).  Times are milliseconds:
 
 | Document                       | KiB | Scenario                   | Median | p95  | Mean overlays |
 |--------------------------------+-----+----------------------------+--------+------+---------------|
-| =final-review.tex=             | 222 | =spacemacs-magic=          |  15.39 | 68.49 |          98.0 |
-|                                |     | =spacemacs-magic-optimized= |   7.84 | 13.57 |          98.0 |
-|                                |     | =spacemacs-magic-no-symbols= |   5.83 | 10.07 |          14.0 |
-|                                |     | =auctex-font-lock=          |   2.70 |  4.99 |           0.0 |
-|                                |     | =auctex-prettify=           |   3.19 |  5.17 |           0.0 |
-| =MKTG6120_Final_Exam_Prep.tex= | 144 | =spacemacs-magic=          |  12.94 | 25.81 |         125.6 |
-|                                |     | =spacemacs-magic-optimized= |   5.31 |  6.13 |         125.6 |
-|                                |     | =spacemacs-magic-no-symbols= |   7.06 | 11.79 |          16.0 |
-|                                |     | =auctex-font-lock=          |   3.21 |  4.06 |           0.0 |
-|                                |     | =auctex-prettify=           |   3.59 |  4.43 |           0.0 |
-| =midterm-review.tex=           | 120 | =spacemacs-magic=          |  14.55 | 58.68 |         118.2 |
-|                                |     | =spacemacs-magic-optimized= |   5.84 | 11.06 |         118.2 |
-|                                |     | =spacemacs-magic-no-symbols= |   3.96 |  7.91 |          12.0 |
-|                                |     | =auctex-font-lock=          |   3.47 |  4.29 |           0.0 |
-|                                |     | =auctex-prettify=           |   3.61 |  4.28 |           0.0 |
+| =final-review.tex=             | 222 | =spacemacs-magic=          |  15.09 | 67.93 |          98.0 |
+|                                |     | =spacemacs-magic-optimized= |   7.63 | 15.54 |          94.8 |
+|                                |     | =spacemacs-magic-no-symbols= |   5.83 |  9.88 |          14.0 |
+|                                |     | =auctex-font-lock=          |   2.83 |  4.67 |           0.0 |
+|                                |     | =auctex-prettify=           |   3.19 |  5.25 |           0.0 |
+| =MKTG6120_Final_Exam_Prep.tex= | 144 | =spacemacs-magic=          |  12.96 | 25.52 |         125.6 |
+|                                |     | =spacemacs-magic-optimized= |   5.26 |  6.12 |         125.6 |
+|                                |     | =spacemacs-magic-no-symbols= |   6.86 | 11.88 |          16.0 |
+|                                |     | =auctex-font-lock=          |   3.32 |  4.09 |           0.0 |
+|                                |     | =auctex-prettify=           |   3.61 |  4.42 |           0.0 |
+| =midterm-review.tex=           | 120 | =spacemacs-magic=          |  14.39 | 57.82 |         118.2 |
+|                                |     | =spacemacs-magic-optimized= |   5.67 | 12.10 |         116.6 |
+|                                |     | =spacemacs-magic-no-symbols= |   4.08 |  8.48 |          12.0 |
+|                                |     | =auctex-font-lock=          |   3.50 |  4.23 |           0.0 |
+|                                |     | =auctex-prettify=           |   3.72 |  4.19 |           0.0 |
 
-The built-in symbol display added only 0.14--0.49 ms to the median ordinary
+The built-in symbol display added only 0.22--0.36 ms to the median ordinary
 AUCTeX font-lock cost in these files and created no overlays.  Disabling Magic
 LaTeX's symbol pass reduced its p95 by 54--86%.
 
 The optimized search path preserved every canonical overlay property on the
 synthetic parity fixture and all three real documents.  It reduced complete
-Magic LaTeX median time by 49--60% and p95 by 76--81%; mean overlay counts were
-identical.  It combines 242 non-overlapping exact-command rules into 25
+Magic LaTeX median time by 49--61% and p95 by 76--79%.  It combines 242
+non-overlapping exact-command rules into 25
 order-preserving regexp segments, leaving 155 dynamic or duplicate rules as
 individual searches.  The resulting symbol plan has 180 searches instead of
 397.  Shared block and script searches now use the same iterative,
 non-signaling scan rather than recursive retries and exception-driven failure.
+Block traversal is iterative too, avoiding the reference implementation's
+evaluation-depth failure and its fallback creation of unrelated offscreen
+overlays.  The viewport parity test confirms that every overlay capable of
+affecting the visible region remains identical; this explains the slightly
+lower mean overlay count in two optimized rows.
 
 The GUI benchmark separately includes forced redisplay.  The p95 for uncached
 viewport navigation was:
 
 | Document                       | AUCTeX | AUCTeX + prettify | Magic, no symbols | Magic reference | Magic optimized |
 |--------------------------------+--------+-------------------+-------------------+-----------------+-----------------|
-| =final-review.tex=             |   2.09 |              1.98 |             34.64 |           44.53 |           23.55 |
-| =MKTG6120_Final_Exam_Prep.tex= |   1.93 |              1.86 |              7.29 |           61.66 |           13.15 |
+| =final-review.tex=             |   2.10 |              1.94 |             21.98 |           32.10 |           26.23 |
+| =MKTG6120_Final_Exam_Prep.tex= |   2.00 |              1.97 |             14.92 |           45.33 |           10.51 |
 
 Cached redisplay was much closer (roughly 1.4--2.9 ms), indicating that the
 worst pauses arise primarily when newly visible text is fontified rather than
 from the glyph renderer alone.  The optimized search path reduced the uncached
-Magic p95 by 47% and 79% in these two controlled runs.
+Magic p95 by 18% and 77% in these two controlled runs.  Per-viewport document
+structure makes pooled GUI tail timings variable, so the exact overlay parity
+and batch results are the stronger regression evidence.
 
 In a 200-viewport CPU profile of the optimized =final-review.tex= scenario,
-=ml/jit-block-highlighter= was the largest named Magic pass at 34% of all
-samples.  The optimized prettifier accounted for 19% and ordinary AUCTeX font
-lock for 18%.  Recursive block traversal, rather than the symbol table, is now
-the clearest remaining Magic LaTeX hotspot.
+ordinary AUCTeX font lock was the largest named pass at 31% of all samples.
+=ml/jit-block-highlighter= fell from 34% before iterative block traversal to
+19% afterward, and the optimized prettifier accounted for 18%.  The remaining
+cost is now distributed across ordinary font lock, block work, and symbols
+rather than dominated by one avoidable scanner path.

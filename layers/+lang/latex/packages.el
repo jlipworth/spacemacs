@@ -270,7 +270,9 @@
       (advice-add 'ml/jit-prettifier :around
                   #'spacemacs//latex-magic-jit-prettifier)
       (advice-add 'ml/search-regexp :around
-                  #'spacemacs//latex-magic-search-regexp-advice))
+                  #'spacemacs//latex-magic-search-regexp-advice)
+      (advice-add 'ml/skip-blocks :around
+                  #'spacemacs//latex-magic-skip-blocks-advice))
     (setq magic-latex-enable-block-highlight t
           magic-latex-enable-suscript t
           ;; Do not run both symbol implementations over the same buffer.
