@@ -41,7 +41,7 @@
      :location (recipe
                 :fetcher github
                 :repo "jlipworth/magic-latex-buffer"
-                :commit "defdb24eb3ea0832e13ec488b778d6ea263156eb")
+                :commit "888dbc94be5bb190d083dd158ff9692578260df3")
      :toggle latex-enable-magic)
     smartparens
     (reftex :location built-in)
