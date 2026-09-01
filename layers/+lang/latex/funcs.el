@@ -91,11 +91,20 @@ valid match remains.  Match data describes the successful match."
                                          (and (< (point) ml/jit-point)
                                               (< ml/jit-point
                                                  (match-end 0))))))
-                           (looking-back "\\([^\\\\]\\|^\\)\\(\\\\\\\\\\)*"
-                                         (point-min))
+                           (spacemacs//latex-magic-unescaped-p (point))
                            (not (ml/skip-comments-and-verbs)))))))
           (and found (not valid))))
     found))
+
+(defun spacemacs//latex-magic-unescaped-p (position)
+  "Return non-nil when POSITION follows an even number of backslashes."
+  (let ((cursor position)
+        (backslashes 0))
+    (while (and (> cursor (point-min))
+                (eq ?\\ (char-before cursor)))
+      (setq cursor (1- cursor)
+            backslashes (1+ backslashes)))
+    (zerop (% backslashes 2))))
 
 (defvar spacemacs--latex-magic-symbol-plan nil
   "Cached segmented search plan for `ml/symbols'.")

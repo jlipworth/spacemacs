@@ -224,6 +224,19 @@ When CONTENT is nil, use `latex-magic-parity--fixture'."
     (should (= (length ml/symbols) rules))
     (should (< (length plan) (length ml/symbols)))))
 
+(ert-deftest latex-magic-parity-escape-check-matches-reference-regexp ()
+  (with-temp-buffer
+    (dotimes (backslashes 12)
+      (erase-buffer)
+      (insert (make-string backslashes ?\\) "alpha")
+      (goto-char (1+ backslashes))
+      (should
+       (eq (not (null
+                 (looking-back "\\([^\\\\]\\|^\\)\\(\\\\\\\\\\)*"
+                               (point-min))))
+           (not (null
+                 (spacemacs//latex-magic-unescaped-p (point)))))))))
+
 (ert-deftest latex-magic-parity-fixture-covers-symbol-families ()
   (let ((snapshot (latex-magic-parity-render #'ml/jit-prettifier)))
     (dolist (source

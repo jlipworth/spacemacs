@@ -128,18 +128,18 @@ enabled; block alignment disabled).  Times are milliseconds:
 
 | Document                       | KiB | Scenario                   | Median | p95  | Mean overlays |
 |--------------------------------+-----+----------------------------+--------+------+---------------|
-| =final-review.tex=             | 222 | =spacemacs-magic=          |  15.24 | 67.70 |          98.0 |
-|                                |     | =spacemacs-magic-optimized= |  11.32 | 60.78 |          98.0 |
+| =final-review.tex=             | 222 | =spacemacs-magic=          |  14.88 | 66.70 |          98.0 |
+|                                |     | =spacemacs-magic-optimized= |   7.58 | 11.74 |          98.0 |
 |                                |     | =spacemacs-magic-no-symbols= |   5.78 |  9.68 |          14.0 |
 |                                |     | =auctex-font-lock=          |   2.83 |  4.88 |           0.0 |
 |                                |     | =auctex-prettify=           |   3.01 |  5.16 |           0.0 |
-| =MKTG6120_Final_Exam_Prep.tex= | 144 | =spacemacs-magic=          |  12.90 | 24.94 |         125.6 |
-|                                |     | =spacemacs-magic-optimized= |   8.73 | 21.47 |         125.6 |
+| =MKTG6120_Final_Exam_Prep.tex= | 144 | =spacemacs-magic=          |  12.83 | 25.47 |         125.6 |
+|                                |     | =spacemacs-magic-optimized= |   8.74 | 13.59 |         125.6 |
 |                                |     | =spacemacs-magic-no-symbols= |   7.11 | 11.81 |          16.0 |
 |                                |     | =auctex-font-lock=          |   3.17 |  4.19 |           0.0 |
 |                                |     | =auctex-prettify=           |   3.45 |  4.36 |           0.0 |
-| =midterm-review.tex=           | 120 | =spacemacs-magic=          |  14.37 | 58.02 |         118.2 |
-|                                |     | =spacemacs-magic-optimized= |  10.16 | 52.62 |         118.2 |
+| =midterm-review.tex=           | 120 | =spacemacs-magic=          |  14.39 | 57.99 |         118.2 |
+|                                |     | =spacemacs-magic-optimized= |   5.67 | 10.04 |         118.2 |
 |                                |     | =spacemacs-magic-no-symbols= |   4.14 |  8.02 |          12.0 |
 |                                |     | =auctex-font-lock=          |   3.47 |  4.27 |           0.0 |
 |                                |     | =auctex-prettify=           |   3.62 |  4.36 |           0.0 |
@@ -150,7 +150,7 @@ LaTeX's symbol pass reduced its p95 by 54--86%.
 
 The exception-free scanner preserved every canonical overlay property on the
 synthetic parity fixture and all three real documents.  It reduced complete
-Magic LaTeX median time by 26--32% and p95 by 9--14%; mean overlay counts were
+Magic LaTeX median time by 32--61% and p95 by 47--83%; mean overlay counts were
 identical.  It combines 242 non-overlapping exact-command rules into 25
 order-preserving regexp segments, leaving 155 dynamic or duplicate rules as
 individual searches.  The resulting plan has 180 searches instead of 397.
@@ -160,13 +160,13 @@ viewport navigation was:
 
 | Document                       | AUCTeX | AUCTeX + prettify | Magic, no symbols | Magic reference | Magic optimized |
 |--------------------------------+--------+-------------------+-------------------+-----------------+-----------------|
-| =final-review.tex=             |   2.02 |              2.07 |             22.33 |           40.79 |           34.17 |
-| =MKTG6120_Final_Exam_Prep.tex= |   1.93 |              1.87 |              7.35 |           61.79 |           23.65 |
+| =final-review.tex=             |   2.02 |              2.07 |             22.33 |           43.92 |           25.67 |
+| =MKTG6120_Final_Exam_Prep.tex= |   1.93 |              1.87 |              7.35 |           62.79 |           19.68 |
 
 Cached redisplay was much closer (roughly 1.4--2.9 ms), indicating that the
 worst pauses arise primarily when newly visible text is fontified rather than
 from the glyph renderer alone.  The optimized scanner reduced the uncached
-Magic p95 by 16% and 62% in these two controlled runs.
+Magic p95 by 42% and 69% in these two controlled runs.
 
 In a 200-viewport CPU profile of =final-review.tex=, =ml/jit-prettifier=
 accounted for 44% of all samples, almost entirely through =ml/search-regexp=.
