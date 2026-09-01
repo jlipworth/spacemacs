@@ -47,11 +47,19 @@
 (defvar latex-enable-magic-symbols-optimization)
 (declare-function spacemacs//latex-magic-jit-prettifier
                   "../../../layers/+lang/latex/funcs" (function beg end))
+(declare-function spacemacs//latex-magic-search-regexp-advice
+                  "../../../layers/+lang/latex/funcs"
+                  (function regexp &optional bound backward point-safe))
 
 (unless (advice-member-p #'spacemacs//latex-magic-jit-prettifier
                          'ml/jit-prettifier)
   (advice-add 'ml/jit-prettifier :around
               #'spacemacs//latex-magic-jit-prettifier))
+
+(unless (advice-member-p #'spacemacs//latex-magic-search-regexp-advice
+                         'ml/search-regexp)
+  (advice-add 'ml/search-regexp :around
+              #'spacemacs//latex-magic-search-regexp-advice))
 
 (defconst latex-scroll-benchmark--positions '(0.02 0.25 0.50 0.75 0.95))
 

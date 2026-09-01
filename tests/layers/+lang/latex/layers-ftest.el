@@ -28,4 +28,7 @@
     (should-not magic-latex-enable-pretty-symbols)
     (should
      (advice-member-p #'spacemacs//latex-magic-jit-prettifier
-                      'ml/jit-prettifier))))
+                      'ml/jit-prettifier))
+    (should
+     (advice-member-p #'spacemacs//latex-magic-search-regexp-advice
+                      'ml/search-regexp))))

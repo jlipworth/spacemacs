@@ -268,7 +268,9 @@
     (add-hook 'TeX-update-style-hook 'magic-latex-buffer)
     (when latex-enable-magic-symbols-optimization
       (advice-add 'ml/jit-prettifier :around
-                  #'spacemacs//latex-magic-jit-prettifier))
+                  #'spacemacs//latex-magic-jit-prettifier)
+      (advice-add 'ml/search-regexp :around
+                  #'spacemacs//latex-magic-search-regexp-advice))
     (setq magic-latex-enable-block-highlight t
           magic-latex-enable-suscript t
           ;; Do not run both symbol implementations over the same buffer.

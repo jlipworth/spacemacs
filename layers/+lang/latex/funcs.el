@@ -106,6 +106,54 @@ valid match remains.  Match data describes the successful match."
             backslashes (1+ backslashes)))
     (zerop (% backslashes 2))))
 
+(defun spacemacs//latex-magic-search-regexp
+    (regexp &optional bound backward point-safe)
+  "Search for Magic LaTeX REGEXP without unbounded look-behind.
+
+BOUND, BACKWARD, and POINT-SAFE have the meanings documented by
+`ml/search-regexp'.  Preserve its point movement, match data, and signaling
+contract."
+  (let ((start (point))
+        (case-fold-search nil)
+        found
+        valid)
+    (condition-case error-data
+        (progn
+          (while
+              (progn
+                (setq found
+                      (if backward
+                          (re-search-backward regexp bound t)
+                        (re-search-forward regexp bound t)))
+                (when found
+                  (setq valid
+                        (save-match-data
+                          (save-excursion
+                            (goto-char (match-beginning 0))
+                            (and
+                             (not
+                              (and point-safe
+                                   (< (point) ml/jit-point)
+                                   (< ml/jit-point (match-end 0))))
+                             (spacemacs//latex-magic-unescaped-p (point))
+                             (not
+                              (ml/skip-comments-and-verbs backward)))))))
+                (and found (not valid))))
+          (unless found
+            (signal 'search-failed (list regexp)))
+          valid)
+      (error
+       (goto-char start)
+       (error (error-message-string error-data))))))
+
+(defun spacemacs//latex-magic-search-regexp-advice
+    (function regexp &optional bound backward point-safe)
+  "Call Magic LaTeX search FUNCTION or its optimized equivalent."
+  (if latex-enable-magic-symbols-optimization
+      (spacemacs//latex-magic-search-regexp
+       regexp bound backward point-safe)
+    (funcall function regexp bound backward point-safe)))
+
 (defvar spacemacs--latex-magic-symbol-plan nil
   "Cached segmented search plan for `ml/symbols'.")
 

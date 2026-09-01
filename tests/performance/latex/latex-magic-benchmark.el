@@ -47,6 +47,9 @@
 (defvar latex-enable-magic-symbols-optimization)
 (declare-function spacemacs//latex-magic-jit-prettifier
                   "../../../layers/+lang/latex/funcs" (function beg end))
+(declare-function spacemacs//latex-magic-search-regexp-advice
+                  "../../../layers/+lang/latex/funcs"
+                  (function regexp &optional bound backward point-safe))
 
 (defconst latex-magic-benchmark--positions '(0.02 0.25 0.50 0.75 0.95))
 
@@ -151,12 +154,17 @@ features."
         (magic-latex-enable-suscript t)
         (magic-latex-enable-block-highlight t)
         (magic-latex-enable-block-align nil)
-        (latex-enable-magic-symbols-optimization t))
-    (font-lock-fontify-region beg end)
-    (ml/jit-block-aligner beg end)
-    (ml/jit-block-highlighter beg end)
-    (spacemacs//latex-magic-jit-prettifier
-     (symbol-function 'ml/jit-prettifier) beg end)))
+        (latex-enable-magic-symbols-optimization t)
+        (reference-search (symbol-function 'ml/search-regexp)))
+    (cl-letf (((symbol-function 'ml/search-regexp)
+               (lambda (regexp &optional bound backward point-safe)
+                 (spacemacs//latex-magic-search-regexp-advice
+                  reference-search regexp bound backward point-safe))))
+      (font-lock-fontify-region beg end)
+      (ml/jit-block-aligner beg end)
+      (ml/jit-block-highlighter beg end)
+      (spacemacs//latex-magic-jit-prettifier
+       (symbol-function 'ml/jit-prettifier) beg end))))
 
 (defun latex-magic-benchmark--run-font-lock (beg end)
   "Refontify BEG through END with AUCTeX's ordinary font lock."

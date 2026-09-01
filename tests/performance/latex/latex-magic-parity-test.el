@@ -48,6 +48,16 @@
 (defvar latex-enable-magic-symbols-optimization)
 (declare-function spacemacs//latex-magic-jit-prettifier
                   "../../../layers/+lang/latex/funcs" (function beg end))
+(declare-function spacemacs//latex-magic-build-symbol-plan
+                  "../../../layers/+lang/latex/funcs" ())
+(declare-function spacemacs//latex-magic-search-regexp
+                  "../../../layers/+lang/latex/funcs"
+                  (regexp &optional bound backward point-safe))
+(declare-function spacemacs//latex-magic-search-regexp-advice
+                  "../../../layers/+lang/latex/funcs"
+                  (function regexp &optional bound backward point-safe))
+(declare-function spacemacs//latex-magic-unescaped-p
+                  "../../../layers/+lang/latex/funcs" (position))
 
 (defconst latex-magic-parity--fixture
   (concat
@@ -187,9 +197,52 @@ When CONTENT is nil, use `latex-magic-parity--fixture'."
     (spacemacs//latex-magic-jit-prettifier
      (symbol-function 'ml/jit-prettifier) beg end)))
 
+(defun latex-magic-parity--optimized-render (&optional content)
+  "Render CONTENT with the full optimized Magic LaTeX search pipeline."
+  (let ((reference-search (symbol-function 'ml/search-regexp))
+        (latex-enable-magic-symbols-optimization t))
+    (cl-letf (((symbol-function 'ml/search-regexp)
+               (lambda (regexp &optional bound backward point-safe)
+                 (spacemacs//latex-magic-search-regexp-advice
+                  reference-search regexp bound backward point-safe))))
+      (latex-magic-parity-render
+       #'latex-magic-parity--optimized-prettifier content))))
+
 (defun latex-magic-parity--records-for-source (snapshot source)
   "Return records in SNAPSHOT whose source text equals SOURCE."
   (seq-filter (lambda (record) (equal source (nth 2 record))) snapshot))
+
+(defun latex-magic-parity--search-outcome
+    (search regexp bound backward point-safe)
+  "Capture the observable result of calling SEARCH with Magic LaTeX arguments."
+  (condition-case error-data
+      (let ((value (funcall search regexp bound backward point-safe)))
+        (list 'success value (point) (match-data t) (match-string 0)))
+    (error
+     (list 'error (car error-data) (error-message-string error-data) (point)))))
+
+(defun latex-magic-parity--compare-searches
+    (content regexp start jit-point &optional backward point-safe ignored-range)
+  "Compare reference and optimized searches over CONTENT.
+
+Begin each search at START and bind `ml/jit-point' to JIT-POINT.  When
+IGNORED-RANGE is non-nil, apply a comment face between its two positions."
+  (with-temp-buffer
+    (insert content)
+    (when ignored-range
+      (put-text-property (car ignored-range) (cdr ignored-range)
+                         'face 'font-lock-comment-face))
+    (let ((ml/jit-point jit-point))
+      (goto-char start)
+      (let ((reference
+             (latex-magic-parity--search-outcome
+              #'ml/search-regexp regexp nil backward point-safe)))
+        (goto-char start)
+        (should
+         (equal reference
+                (latex-magic-parity--search-outcome
+                 #'spacemacs//latex-magic-search-regexp
+                 regexp nil backward point-safe)))))))
 
 (ert-deftest latex-magic-parity-reference-is-deterministic ()
   (should
@@ -198,17 +251,16 @@ When CONTENT is nil, use `latex-magic-parity--fixture'."
 
 (ert-deftest latex-magic-parity-optimized-matches-reference ()
   (should
-   (latex-magic-parity-compare-prettifiers
-    #'ml/jit-prettifier #'latex-magic-parity--optimized-prettifier))
+   (equal (latex-magic-parity-render #'ml/jit-prettifier)
+          (latex-magic-parity--optimized-render)))
   (when-let ((files (getenv "LATEX_BENCH_PARITY_FILES")))
     (dolist (file (split-string files (regexp-quote path-separator) t))
       (let ((content (with-temp-buffer
                        (insert-file-contents file)
                        (buffer-string))))
         (should
-         (latex-magic-parity-compare-prettifiers
-          #'ml/jit-prettifier #'latex-magic-parity--optimized-prettifier
-          content))))))
+         (equal (latex-magic-parity-render #'ml/jit-prettifier content)
+                (latex-magic-parity--optimized-render content)))))))
 
 (ert-deftest latex-magic-parity-search-plan-preserves-rules ()
   (let* ((plan (spacemacs//latex-magic-build-symbol-plan))
@@ -236,6 +288,26 @@ When CONTENT is nil, use `latex-magic-parity--fixture'."
                                (point-min))))
            (not (null
                  (spacemacs//latex-magic-unescaped-p (point)))))))))
+
+(ert-deftest latex-magic-parity-optimized-search-matches-reference ()
+  (let ((alpha "\\\\alpha\\>"))
+    ;; Successful forward and backward searches retain point and match data.
+    (latex-magic-parity--compare-searches
+     "\\alpha and \\alpha" alpha 1 1)
+    (latex-magic-parity--compare-searches
+     "\\alpha and \\alpha" alpha 18 1 t)
+    ;; Escaped matches, ignored faces, and matches containing point are skipped.
+    (latex-magic-parity--compare-searches
+     "\\\\alpha then \\alpha" alpha 1 1)
+    (latex-magic-parity--compare-searches
+     "\\alpha then \\\\alpha" alpha 20 1 t)
+    (latex-magic-parity--compare-searches
+     "\\alpha then \\alpha" alpha 1 4 nil t)
+    (latex-magic-parity--compare-searches
+     "x\\alpha then \\alpha" alpha 1 1 nil nil '(1 . 8))
+    ;; Failure, including invalid regexps, retains the starting point and error.
+    (latex-magic-parity--compare-searches "\\\\alpha" alpha 1 1)
+    (latex-magic-parity--compare-searches "text" "[" 3 1)))
 
 (ert-deftest latex-magic-parity-fixture-covers-symbol-families ()
   (let ((snapshot (latex-magic-parity-render #'ml/jit-prettifier)))
