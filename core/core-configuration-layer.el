@@ -805,12 +805,13 @@ a new object."
                      (plist-get (cdr pkg-specs) :location)))
          (protected (when (listp pkg-specs)
                       (plist-get (cdr pkg-specs) :protected)))
-         (init-func (intern (format "%S/init-%S"
-                                    layer-name pkg-name)))
-         (pre-init-func (intern (format "%S/pre-init-%S"
-                                        layer-name pkg-name)))
-         (post-init-func (intern (format "%S/post-init-%S"
-                                         layer-name pkg-name)))
+         (layer-name-str (symbol-name layer-name))
+         (pkg-name-str (symbol-name pkg-name))
+         (init-func (intern (concat layer-name-str "/init-" pkg-name-str)))
+         (pre-init-func (intern (concat layer-name-str "/pre-init-"
+                                        pkg-name-str)))
+         (post-init-func (intern (concat layer-name-str "/post-init-"
+                                         pkg-name-str)))
          (copyp (not (null obj)))
          (obj (if obj obj (cfgl-package :name pkg-name)))
          (ownerp (or (and (eq 'dotfile layer-name)
