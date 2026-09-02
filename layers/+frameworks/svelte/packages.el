@@ -45,7 +45,8 @@
   (add-hook 'svelte-mode-local-vars-hook #'spacemacs//svelte-setup-company))
 
 (defun svelte/post-init-evil-matchit ()
-  (evilmi-load-plugin-rules '(svelte-mode) '(template simple html))
+  (with-eval-after-load 'evil-matchit
+    (evilmi-load-plugin-rules '(svelte-mode) '(template simple html)))
   (add-hook 'svelte-mode-hook 'turn-on-evil-matchit-mode))
 
 (defun svelte/post-init-flycheck ()
