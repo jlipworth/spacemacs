@@ -30,8 +30,7 @@ Set `eyebrowse-new-workspace' value depending on the state of `purpose-mode'."
   (defvar spacemacs--window-purpose-eyebrowse-new-workspace
     eyebrowse-new-workspace
     "Internal backup of `eyebrowse-new-workspace'.")
-  (require 'window-purpose)
-  (if purpose-mode
+  (if (bound-and-true-p purpose-mode)
       (setq eyebrowse-new-workspace #'spacemacs//window-purpose-new-workspace)
     (setq eyebrowse-new-workspace
           spacemacs--window-purpose-eyebrowse-new-workspace)))
