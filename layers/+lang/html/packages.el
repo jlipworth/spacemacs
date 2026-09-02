@@ -108,7 +108,8 @@
     (spacemacs|hide-lighter emmet-mode)))
 
 (defun html/post-init-evil-matchit ()
-  (evilmi-load-plugin-rules '(web-mode) '(simple template html))
+  (with-eval-after-load 'evil-matchit
+    (evilmi-load-plugin-rules '(web-mode) '(simple template html)))
   (add-hook 'web-mode-hook 'turn-on-evil-matchit-mode))
 
 (defun html/post-init-flycheck ()
