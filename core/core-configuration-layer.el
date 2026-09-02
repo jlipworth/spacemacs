@@ -757,13 +757,14 @@ If USEDP or `configuration-layer--load-packages-files' is non-nil then the
                        (memq :can-shadow layer-specs))
                   (spacemacs/mplist-get-values layer-specs :can-shadow)
                 'unspecified))
-             (packages-file (locate-file "packages" (list dir) load-suffixes))
              (packages (when (and (null packages)
-                                  (or usedp configuration-layer--load-packages-files)
-                                  packages-file)
-                         (configuration-layer/load-file packages-file)
-                         (symbol-value (intern (format "%S-packages"
-                                                       layer-name)))))
+                                  (or usedp configuration-layer--load-packages-files))
+                         (let ((packages-file
+                                (locate-file "packages" (list dir) load-suffixes)))
+                           (when packages-file
+                             (configuration-layer/load-file packages-file)
+                             (symbol-value (intern (format "%S-packages"
+                                                           layer-name)))))))
              (selected-packages (if packages
                                     (configuration-layer//select-packages
                                      layer-specs packages)
