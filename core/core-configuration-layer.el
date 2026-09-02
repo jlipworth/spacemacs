@@ -1937,10 +1937,20 @@ RNAME is the name symbol of another existing layer."
   (configuration-layer//filter-packages-with-deps
    pkg-names 'configuration-layer//new-version-available-p 'use-archive))
 
+(defvar configuration-layer--defun-file-index nil
+  "Hash table mapping a function symbol to the file where it was defined.
+Lazily built from `load-history' by
+`configuration-layer//defun-source-file'.  Let-bound to nil by
+`configuration-layer//configure-packages' so each configuration pass
+starts from a fresh index.")
+
 (defun configuration-layer//configure-packages (packages)
   "Configure all passed PACKAGES honoring the steps order."
   (spacemacs/init-progress-bar (length packages))
-  (let (bootstrap-packages pre-packages other-packages)
+  (let (bootstrap-packages pre-packages other-packages
+        ;; Fresh per configuration pass so a resync never sees a stale
+        ;; index, and the table is released once configuration is done.
+        configuration-layer--defun-file-index)
     (dolist (pkg-name packages)
       (let* ((pkg (configuration-layer/get-package pkg-name))
              (step (oref pkg step)))
@@ -2056,6 +2066,29 @@ LAYER must not be the owner of PKG."
              (memq layer enabled)
            (not (memq layer disabled))))))
 
+(defun configuration-layer//defun-source-file (func)
+  "Return the file where FUNC was defined, like (symbol-file FUNC \\='defun).
+
+`symbol-file' walks the whole of `load-history' on every call, which is
+costly when it is called once per layer init/pre-init/post-init function.
+Since every call uses a distinct symbol, memoizing per symbol does not
+help; instead build a single index of all recorded `defun' entries on the
+first call and look FUNC up in it.  Fall back to `symbol-file' when FUNC
+is not in the index (e.g. an autoloaded function)."
+  (unless configuration-layer--defun-file-index
+    (let ((index (make-hash-table :test 'eq)))
+      (dolist (entry load-history)
+        (when (stringp (car entry))
+          (let ((file (car entry)))
+            (dolist (elem (cdr entry))
+              (when (and (consp elem) (eq (car elem) 'defun)
+                         (symbolp (cdr elem))
+                         (not (gethash (cdr elem) index)))
+                (puthash (cdr elem) file index))))))
+      (setq configuration-layer--defun-file-index index)))
+  (or (gethash func configuration-layer--defun-file-index)
+      (symbol-file func 'defun)))
+
 (defun configuration-layer//funcall-recording-load-history (func)
   "Call FUNC while attributing any definitions to the correct source file.
 
@@ -2065,7 +2098,8 @@ are still inside init.el's `load'), so any `defun' or `defvar' evaluated
 during FUNC is incorrectly recorded under init.el in `load-history'.
 
 This function fixes that by:
-1. Looking up the file where FUNC was defined (via `symbol-file').
+1. Looking up the file where FUNC was defined (via
+   `configuration-layer//defun-source-file').
 2. Let-binding `load-file-name' to that file and `current-load-list' to
    nil, so that definitions made during FUNC are captured separately.
 3. After FUNC returns, merging the captured definitions into the correct
@@ -2074,7 +2108,7 @@ This function fixes that by:
 Definitions are merged even if FUNC signals an error, since any
 definitions evaluated before the error are live in the runtime and
 should be navigable via `find-function'."
-  (if-let* ((source-file (symbol-file func 'defun)))
+  (if-let* ((source-file (configuration-layer//defun-source-file func)))
       (let ((current-load-list nil)
             (load-file-name source-file))
         (unwind-protect
