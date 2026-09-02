@@ -55,7 +55,8 @@
     (ranger//set-leader-keys)
     (when (eq ranger-override-dired 'dirvish)
       (setq dirvish-default-layout nil)
-      (dirvish-override-dired-mode 1))
+      (with-eval-after-load 'dired
+        (dirvish-override-dired-mode 1)))
     :config
     (ranger//apply-override-dired)
     ;; Add icons attribute based on dotspacemacs-default-icons-font.
