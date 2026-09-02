@@ -154,7 +154,12 @@
     ;; with original `C-x C-f', `C-x b', etc. and `semantic' key bindings.
     (setcdr purpose-mode-map nil)
     (spacemacs|diminish purpose-mode)
-    (purpose-x-golden-ratio-setup)
+    ;; `purpose-x-golden-ratio-setup' and `purpose-x-magit-multi-on' are
+    ;; autoloaded from window-purpose-x, which requires dired, ibuffer and
+    ;; imenu-list at load time; defer them until their targets are loaded.
+    (with-eval-after-load 'golden-ratio
+      (purpose-x-golden-ratio-setup))
 
     ;; Show magit-log-select and diff in two windows
-    (purpose-x-magit-multi-on)))
+    (with-eval-after-load 'magit
+      (purpose-x-magit-multi-on))))
