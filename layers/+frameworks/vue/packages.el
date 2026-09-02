@@ -51,7 +51,8 @@
   (add-hook 'vue-mode-local-vars-hook #'spacemacs//vue-setup-company))
 
 (defun vue/post-init-evil-matchit ()
-  (evilmi-load-plugin-rules '(vue-mode) '(template simple html))
+  (with-eval-after-load 'evil-matchit
+    (evilmi-load-plugin-rules '(vue-mode) '(template simple html)))
   (add-hook 'vue-mode-hook 'turn-on-evil-matchit-mode))
 
 (defun vue/post-init-flycheck ()

@@ -38,7 +38,8 @@
       :modes reason-mode)))
 
 (defun reasonml/post-init-evil-matchit ()
-  (evilmi-load-plugin-rules '(reason-mode) '(template simple html))
+  (with-eval-after-load 'evil-matchit
+    (evilmi-load-plugin-rules '(reason-mode) '(template simple html)))
   (add-hook 'reason-mode-hook 'turn-on-evil-matchit-mode))
 
 (defun flycheck-ocaml-reason-setup ()
