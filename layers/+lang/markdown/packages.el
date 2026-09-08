@@ -33,7 +33,9 @@
                            :commit "8370cb5f3487a32712cee8982c0cb3bb0e193c89"))
     markdown-toc
     smartparens
-    valign
+    (valign :location
+            (recipe :fetcher github :repo "jlipworth/valign"
+                    :commit "39b0d24f4ca491b402f58f30c21406f8d164d25d"))
     (vmd-mode :toggle (eq 'vmd markdown-live-preview-engine))))
 
 (defun markdown/post-init-company ()

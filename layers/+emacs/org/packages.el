@@ -65,7 +65,9 @@
     (verb :toggle org-enable-verb-support)
     (org-roam :toggle org-enable-roam-support)
     (org-roam-ui :toggle org-enable-roam-ui)
-    (valign :toggle org-enable-valign)
+    (valign :toggle org-enable-valign
+            :location (recipe :fetcher github :repo "jlipworth/valign"
+                              :commit "39b0d24f4ca491b402f58f30c21406f8d164d25d"))
     (org-appear :toggle org-enable-appear-support)
     (org-transclusion :toggle org-enable-transclusion-support)
     helm
