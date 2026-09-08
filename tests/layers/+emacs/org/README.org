@@ -1,0 +1,27 @@
+* Org exporter load-order regression tests
+
+These ERT tests run each scenario in a fresh =emacs -Q --batch= subprocess,
+without Spacemacs startup, package installation, network access, or changes to
+user configuration.  They load the actual layer package declarations and
+=org/init-ox-gfm= with real =use-package=, Org, and ox-gfm libraries.  Org's
+export dispatcher is exercised through its real =g G= menu action.
+
+Use already installed packages (and Emacs 29 or newer for built-in
+=use-package=):
+
+#+begin_src sh
+make -C tests/layers/+emacs/org test \
+  EMACS=/path/to/emacs \
+  ORG_DIR=/path/to/org-version \
+  OX_GFM_DIR=/path/to/ox-gfm-version
+#+end_src
+
+Omit =ORG_DIR= to test the Org bundled with Emacs.  Package directories are
+read-only dependencies; subprocess runtime state is temporary and removed.
+
+Coverage includes entering Org without loading export backends, first export
+via the dispatcher, direct exporter autoload before =ox=, initialization after
+=ox= has already loaded, and disabled GitHub support.  The toggle test checks
+the layer's actual package declaration and suppresses its initializer; it does
+not boot the complete configuration-layer package installer.  Full Spacemacs
+startup and other layers' export side effects belong in isolated GUI tests.
