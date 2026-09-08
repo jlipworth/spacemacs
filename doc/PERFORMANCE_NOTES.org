@@ -1,0 +1,197 @@
+#+TITLE: Performance investigation notes — September 2026
+
+* Scope and stopping rule
+
+Investigation of the =working= fork with Emacs 30.2 and the configured
+layers, not an exhaustive audit of every layer or language server.  Keep
+features intact; measure actual first-use/editing work rather than treating
+nested profile times or synthetic microbenchmarks as end-to-end savings.
+No upstream submissions are planned for this session.
+
+* Implemented and installed
+
+Each dependency change is isolated in its fork; Spacemacs pins exact revisions.
+
+| Change | Spacemacs commit | Evidence |
+|--------+------------------+----------|
+| Defer ox-gfm until ox | de7c14c | Five fresh-process tests on two Org versions; three GUI pairs, first Org median 2.237 -> 1.981 s |
+| Lazy Markdown language resolution | d90f9bd | Full suite: 579 expected results, including one preexisting expected failure; fenced-code editing 67.15 -> 11.28 ms/action in five pairs |
+| Lazy Clojure test-tree dependencies | 6421ace | Six targeted tests in source/compiled/plist modes; six GUI pairs, first LaTeX median 3.191 -> 2.968 s |
+| Skip unused valign render widths | 3fe8604 | Four packaged tests; three GUI pairs, documentation first display 5.624 -> 4.519 s; 24 matching property/pixel-geometry comparisons |
+
+These results come from separate experiments and must not be added together.
+No startup improvement is claimed.  Markdown gains concern edits inside
+native-fontified fenced code, not arbitrary scrolling.  The valign change
+retains width discovery and right-aligned measurements; it adds no cache.
+
+The Org change also avoids an initialization-order problem: eager export
+loads org-element, whose LSP API probe creates an Org buffer before the
+agenda callback adds org-habit.  The deferred path honors that configured
+module; identical loaded-feature sets are therefore not claimed.
+
+* Remaining candidates worth retaining
+
+** Repeated valign passes — measured, requires invalidation analysis
+
+Before combined validation, a real documentation opening produced 285
+alignment attempts across 101 positions (not all genuine Org tables).  The width fix reduced pixel-sizing calls from 32,612
+to 18,072 but did not reduce pass count.  Plain no-op redisplay caused zero
+passes, so this is not evidence of perpetual idle realignment.
+
+Investigate org-indent completion, jit-lock reentrancy, and refontification
+separately.  Pixel measurement itself can trigger fontification and nested
+alignment.  Do not suppress calls or cache widths without preserving edits,
+folds, links, fonts, text scaling, faces, overlays, indentation, and window
+geometry.  First-pass widths cannot blindly substitute for right-aligned
+render widths because earlier columns already have display overlays.
+
+Final combined tracing classified the 285 attempts as 112 outer calls and
+173 nested calls via pixel measurement -> jit-lock -> valign.  The 112 outer
+calls comprised 100 real-table positions plus 12 attempts at pipe-prefixed
+ASCII directory artwork inside an example block.  Do not describe all 101
+positions as real Org tables.
+
+A separate explicitly invoked empty-queue Org-indent callback caused 112
+attempts without any completed-buffer hook.  A natural later cleanup of a
+dead queued buffer caused 100 attempts during unfolding, also without a live
+buffer completion.  Three batch mechanism tests corroborate callback and
+fontification-bound behavior.  This identifies a follow-up, not a measured
+speedup from a tested second patch.
+
+Potential future fix: use the completed-buffer hook provided by modern Org,
+with compatibility coverage, rather than a global post-agent queue-empty
+check.  A smaller nonempty-to-empty guard would not resolve all routing/dead
+buffer cases.  A blanket reentrancy guard can suppress another table while
+jit-lock marks its range fontified, leaving stale alignment.  Defer both
+changes until they have multi-buffer, idle-timer, interrupted initialization,
+fold/edit/font/scale, and older-Org tests.  No extra production change landed.
+
+** Layout membership — only compelling at large buffer counts
+
+=layers/+spacemacs/spacemacs-layouts/funcs.el= filters all buffers through
+linear perspective membership.  Compiled synthetic 5,000-buffer / 2,500-member
+case: 17.254 ms original, 0.855 ms existing reverse-index helper, 0.443 ms
+per-call hash.  At 300/30: 0.043, 0.048, 0.026 ms respectively; insignificant
+practical gain there.  Ten ERT tests passed.
+
+The reverse helper depends on synchronized indexes; deliberately inconsistent
+state diverges.  A per-call hash preserves the forward-list authority.  Only
+pursue after reproducing sluggish switching/splitting with many buffers.
+
+** evil-mc deferral — shifts work, does not remove it
+
+=layers/+misc/multiple-cursors/packages.el=: initialization 60.441 -> 0.030 ms,
+first programming buffer 0.053 -> 60.072 ms in isolated tests.  Combined cost
+unchanged; 48 regression checks passed.  Non-autoloaded internal commands
+would not appear in M-x until activation.  Existing issue:
+[[https://github.com/jlipworth/spacemacs/issues/13][#13 multiple-cursors]].  Not a demonstrated interaction improvement.
+
+** Loaded-feature guard for load hints — inactive in tested configuration
+
+=core/core-spacemacs.el=, =require@LOAD-HINTS=: avoid hint lookup/file probes
+when =(featurep feature)= already holds.  Synthetic repeated-require tests
+show a large relative improvement, but load hints are disabled in the tested
+configuration.  No user startup saving demonstrated.  Test loaded/unloaded,
+explicit filename, stale hint, duplicate library precedence, and noerror.
+
+** Discovery and cleanup algorithms — hypotheses, not measured user wins
+
+- =core/core-configuration-layer.el=: repeated directory predicates during
+  layer discovery may be redundant.  Preserve nondirectory skips, symlinks,
+  category traversal, private overrides, and index ordering.  Warm local APFS
+  benefit unestablished; network/Windows filesystems could differ.
+- Package orphan classification revisits shared reverse-dependency graphs.
+  A per-cleanup memo might help; mock deletion in all tests.  Cycles need
+  explicit semantics and cannot be casually changed in destructive cleanup.
+- Defun-source cache can be stale when a definition changes within a single
+  configuration pass.  Synthetic correctness issue, not a reproduced user
+  failure; test function identity/invalidation before optimizing further.
+- Existing purpose/ranger/matchit deferrals would benefit from committed
+  first-use/load-order regression coverage; do not duplicate those fixes.
+
+** Org default link integrations — possible dependency-level work
+
+=ol-gnus= eagerly loads substantial Gnus code.  Removing it removes link
+support and is not an equivalent optimization.  Any lazy refactor needs
+Gnus/message link follow/store/search coverage.  Inclusive loader times do
+not establish the saving from such a refactor.
+
+* Deprioritized or rejected
+
+- *Modeline diminish*: the tested configuration disables the minor-mode
+  segment, so the suspected repeated work does not run.  With it enabled,
+  guarded prototype saved only 0.38–0.62 microseconds; 13 tests passed.
+- *Frame title*: about 5.36 microseconds/evaluation with the configured GC
+  threshold.  Too small to prioritize; caching must preserve dynamic escapes.
+- *Dashboard Projectile*: loading its dependency chain is real work, but the
+  saved-project lookup itself was only about 0.2 ms in corrected profiling.
+  Reading its persistence file directly would duplicate semantics and skip
+  cleanup/discovery.  No validated dashboard replacement.
+- *Empty dashboard icons*: guard is possible cleanup but other visible icons
+  load the same library shortly afterward; negligible likely benefit here.
+- *Info+*: apparent excess was a copied-source timestamp bias.  Existing
+  integration is already deferred; moving to Info-mode-hook is not equivalent
+  because Info+ redefines Info-mode itself.
+- *EditorConfig*: eager global setup protects first-file decoding and directory
+  local handling.  Ordinary mode/find-file hooks are too late for charset.
+- *OPAM discovery*: isolated HOME lacks the real OPAM state, so failure timing
+  is not representative.  Deferral also changes precedence for Dune, Merlin,
+  UTop and other tools.  Direct argv invocation remains an unmeasured option.
+- *Package quickstart/external theme ordering*: inactive in tested settings.
+- *GC tuning*: corrected profiles did not make GC the leading bottleneck.
+- *LSP/Company delay knobs*: configured completion delay is not computational
+  slowness.  Lower delay or disabling diagnostics trades latency against work
+  or functionality; do not present as a validated source-code fix.
+
+* GitHub issue context
+
+The original audit enumerated all 43 open and 3 closed fork issues at that
+time.  [[https://github.com/jlipworth/spacemacs/issues/24][#24 Markdown]],
+[[https://github.com/jlipworth/spacemacs/issues/21][#21 LSP]], and
+[[https://github.com/jlipworth/spacemacs/issues/23][#23 Org]] are adjacent areas,
+not assertions that these issue bodies describe or are resolved by our fixes.
+No issues were closed or updated.  #2 modeline concerned visual correctness;
+#19 completion delay is a configuration choice; #48 dependency-workaround
+cleanup is not evidence of a remaining performance defect.
+
+* Evidence and limitations
+
+Sanitized reports/harnesses are retained locally under
+=/Users/jlipworth/.codex/artifacts/=:
+
+- =spacemacs-perf-20260908.6hmRsk/REPORT.md=: corrected initial profiles.
+- =spacemacs-perf-implementation-20260908.AtZe3r/REPORT.md=: implementation,
+  tests, first-use experiments and subsequent publication/pin status.
+- =spacemacs-valign-gui-20260908.em4ilo4o/REPORT.md=: valign A/B and geometry.
+- =spacemacs-package-install-20260908/=: build/install/fresh-batch verification.
+
+Early copy-mtime-biased measurements were discarded.  Corrected experiments
+verify package bytes and nanosecond mtimes and isolate GUI state.  Native JIT
+was disabled; OS caches were not controlled cold.  Missing auctex-latexmk and
+isolated OPAM state are existing limitations.  No remote/TRAMP benchmarks,
+all-language sweep, or long-session memory/leak validation was performed.
+Full-config harnesses require private isolated input provisioning; sanitized
+bundles are not hermetic benchmark distributions.  Never run them against a
+primary Emacs instance.
+
+* Final combined stability check
+
+Full configured isolated GUI at =3fe8604= selected the rebuilt Markdown
+=20260908.141316=, LSP =20260908.141316=, and valign =20260908.143026=.
+Startup and targeted functional smoke passed: fenced-code edit faces, first
+LaTeX LSP/Clojure capability without premature Treemacs, first Org without
+export backends, safe toy GFM export, and table edit/scale/fold-unfold geometry.
+The Org batch regression suite was rerun: 5/5.  This is bounded smoke
+coverage, not a promise of all-language or long-session stability.
+
+The repeated-pass trace had one harness buffer-selection failure after the
+first-document phase; corrected tracing passed and the failed diagnostic was
+retained.  It was not a production failure.  No upstream PRs or further
+optimization changes were made.  Stop here unless everyday use exposes a
+regression; the remaining ideas are a backlog, not release blockers.
+
+Final smoke/trace/cleanup evidence:
+=/Users/jlipworth/.codex/artifacts/spacemacs-combined-smoke-20260908.p6p4wbng/REPORT.md=.
+Batch repeated-pass mechanism tests:
+=/Users/jlipworth/.codex/artifacts/spacemacs-valign-20260908/repeated-passes/REPORT.md=.
+All disposable GUI processes/worktrees and copied runtime state were cleaned.
