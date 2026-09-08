@@ -852,9 +852,8 @@ Headline^^            Visit entry^^               Filter^^                    Da
   (spacemacs|use-package-add-hook org :post-config (require 'ox-twbs)))
 (defun org/init-ox-twbs ())
 
-(defun org/pre-init-ox-gfm ()
-  (spacemacs|use-package-add-hook org :post-config (require 'ox-gfm)))
-(defun org/init-ox-gfm ())
+(defun org/init-ox-gfm ()
+  (use-package ox-gfm :after ox))
 
 (defun org/pre-init-org-re-reveal ()
   (spacemacs|use-package-add-hook org :post-config (require 'org-re-reveal)))
