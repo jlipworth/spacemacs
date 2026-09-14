@@ -74,9 +74,13 @@ is plausible but contradicted by the merged precedent — don't act on it.
    git show --stat HEAD                        # only the intended files
    emacs -Q --batch -f batch-byte-compile <changed.el>   # syntax check
    ```
-   For any behavior change (keybindings, mode hooks, keymaps), confirm it live
-   with the `spacemacs-daemon-testing` skill before opening the PR — a daemon
-   check repeatedly catches inaccurate reasoning that "looks right" on paper.
+   Follow `AGENTS.md` for all test isolation. Any batch test that loads
+   Spacemacs must set a disposable `user-emacs-directory` before loading it;
+   `-Q`, `--batch`, and `SPACEMACSDIR` alone do not isolate package storage.
+   Use the isolated core-test helper in the `syncing-with-upstream` skill.
+   For behavior needing interactive verification, use a separate GUI instance
+   from a unique worktree, never the user's primary Emacs. Byte compilation
+   alone does not verify keybindings, mode hooks, or keymaps.
 6. **Push to the fork** (never to `syl20bnr`):
    ```sh
    git push -u jlipworth upstream-pr-<topic>
@@ -104,7 +108,7 @@ is plausible but contradicted by the merged precedent — don't act on it.
 - **Skipping the `CHANGELOG.develop` entry** on a code change — `CONTRIBUTING.org`
   and the PR template both ask for it.
 - **Opening the PR against `master`** — `master` is read-only; base is `develop`.
-- **Claiming the fix works without verifying** — byte-compile, and daemon-test
-  any behavior change, before opening (see `spacemacs-daemon-testing`).
+- **Claiming the fix works without verifying** — byte-compile, and verify behavior
+  with appropriately isolated tests before opening (see `AGENTS.md`).
 - **Pushing to `syl20bnr`** — only ever push to the `jlipworth` fork.
 - **More than one commit / one topic per PR** — squash to a single commit.
