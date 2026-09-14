@@ -48,6 +48,6 @@ under lsp's `a` — is shadowed/unreachable while lsp-mode is active (was bug #1
 ## Quick Commands
 
 ```sh
-make -C tests/core test           # Run core tests
-make -C tests/layers/+lang/python test  # Run layer tests
+sh .claude/skills/syncing-with-upstream/scripts/isolated-core-tests.sh
+# Layer tests also require explicit runtime isolation; see AGENTS.md.
 ```

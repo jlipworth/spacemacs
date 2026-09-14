@@ -2,8 +2,16 @@
 
 Read `CLAUDE.md` for repository structure, conventions, and test commands.
 
-## Interactive Emacs testing
+## Emacs testing (batch and interactive)
 
+- Batch mode is not filesystem isolation. Before any test loads Spacemacs,
+  set `user-emacs-directory` explicitly to a unique disposable directory;
+  isolate package, cache, and native-compilation paths too. `SPACEMACSDIR`
+  selects the test dotfile only. A minimal test config can delete live
+  packages as orphans, including during unit-test startup.
+- For core tests use
+  `sh .claude/skills/syncing-with-upstream/scripts/isolated-core-tests.sh`.
+  Never symlink or hardlink live runtime state into a test directory.
 - Never restart, kill, or automate the user's primary Emacs instance.
 - Use batch/ERT tests when they are sufficient. Use an isolated GUI instance
   when a change needs full startup, restart, frame, font, image, color, or
