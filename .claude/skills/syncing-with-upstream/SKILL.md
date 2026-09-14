@@ -65,10 +65,22 @@ not to merge the two.
    ```
    Every local commit should appear `=` or with explainable changes; commits
    intentionally dropped in step 4 show as removed — confirm each was meant.
-7. **Smoke test:** `make -C tests/core test`. Two func tests
-   (`test-git-fetch-tags`, `test-git-has-remote`) fail in any clone lacking an
-   `origin` remote — environmental, not a regression. For interactive
-   behavior, the `spacemacs-daemon-testing` skill covers live verification.
+7. **Smoke test in an isolated runtime:** from the repository root run
+   ```sh
+   sh .claude/skills/syncing-with-upstream/scripts/isolated-core-tests.sh
+   ```
+   Never run bare `make -C tests/core test` (or its installation/unit/func
+   targets) against the live Emacs directory. `SPACEMACSDIR` selects the
+   dotfile, not package/cache storage; `-Q --batch` does not isolate storage.
+   The minimal test configuration can delete live packages as orphans.
+   The helper sets `user-emacs-directory` before loading Spacemacs and redirects
+   native compilation cache to a unique temporary runtime. It retains that
+   directory for inspection; remove only that printed directory when finished.
+   Optionally set `SPACEMACS_TEST_ELPA_SEED` to an existing ELPA root to copy
+   dependencies (never symlink or hardlink live runtime state into tests).
+   Inspect actual failures: remote tests need `origin`, and fetch-tags also
+   expects `origin/master`; missing prerequisites are not code regressions.
+   For GUI verification follow the isolated-instance rules in `AGENTS.md`.
 8. **Push:** `git push --force-with-lease jlipworth working`
    (`develop` needs no push — it just mirrors upstream).
 
