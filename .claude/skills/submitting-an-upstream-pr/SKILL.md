@@ -19,7 +19,7 @@ push to the fork, open the PR. Selecting *which* fix is the
 | Fact | Value |
 |---|---|
 | Upstream remote / repo | `syl20bnr` → `syl20bnr/spacemacs` (PR base: `develop`) |
-| Fork remote (push here) | `jlipworth` → `git@github.com:jlipworth/spacemacs.git` |
+| Fork remote (push here) | `origin` → `https://github.com/jlipworth/spacemacs` |
 | Mirror branch | local `develop` tracks `syl20bnr/develop` |
 | Fix branch | `working` |
 | Commit author | from repo git config: `Jonathan Lipworth <jonathan.lipworth@gmail.com>` — do **not** override it (the harness `currentDate`/email context is not the git identity) |
@@ -83,7 +83,7 @@ is plausible but contradicted by the merged precedent — don't act on it.
    alone does not verify keybindings, mode hooks, or keymaps.
 6. **Push to the fork** (never to `syl20bnr`):
    ```sh
-   git push -u jlipworth upstream-pr-<topic>
+   git push -u origin upstream-pr-<topic>
    ```
 7. **Open the PR against upstream develop:**
    ```sh
@@ -110,5 +110,5 @@ is plausible but contradicted by the merged precedent — don't act on it.
 - **Opening the PR against `master`** — `master` is read-only; base is `develop`.
 - **Claiming the fix works without verifying** — byte-compile, and verify behavior
   with appropriately isolated tests before opening (see `AGENTS.md`).
-- **Pushing to `syl20bnr`** — only ever push to the `jlipworth` fork.
+- **Pushing to `syl20bnr`** — only ever push to the `origin` fork (jlipworth/spacemacs).
 - **More than one commit / one topic per PR** — squash to a single commit.
