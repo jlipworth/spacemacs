@@ -24,9 +24,9 @@ when the branch is stable.
 | Fact | Value |
 |---|---|
 | Upstream remote | `syl20bnr` → https://github.com/syl20bnr/spacemacs |
-| Fork remote | `jlipworth` → git@github.com:jlipworth/spacemacs.git |
+| Fork remote | `origin` → https://github.com/jlipworth/spacemacs |
 | Mirror branch | local `develop` tracks `syl20bnr/develop` |
-| Fix branch | `working` (tracks `jlipworth/working`) |
+| Fix branch | `working` (tracks `origin/working`) |
 | Open issue volume | ~50 total — one `gh issue list --limit 100` page covers everything |
 
 ## Workflow

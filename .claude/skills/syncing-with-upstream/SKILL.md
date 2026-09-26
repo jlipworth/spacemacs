@@ -81,7 +81,7 @@ not to merge the two.
    Inspect actual failures: remote tests need `origin`, and fetch-tags also
    expects `origin/master`; missing prerequisites are not code regressions.
    For GUI verification follow the isolated-instance rules in `AGENTS.md`.
-8. **Push:** `git push --force-with-lease jlipworth working`
+8. **Push:** `git push --force-with-lease origin working`
    (`develop` needs no push — it just mirrors upstream).
 
 ## Common mistakes
@@ -94,7 +94,7 @@ not to merge the two.
 - **Skipping range-diff** — a "clean" rebase can still silently mangle a
   commit; range-diff is the only cheap way to see what actually changed.
 - **`git push -f`** — always `--force-with-lease`, and only to the
-  `jlipworth` fork, never to `syl20bnr`.
+  `origin` fork (jlipworth/spacemacs), never to `syl20bnr`.
 - **Ignoring stale worktrees** — `.claude/worktrees/*` hold old branches
   pinned to pre-rebase commits; they don't block the rebase, but prune them
   (`git worktree prune` after deleting dirs) if branch cleanup errors mention
