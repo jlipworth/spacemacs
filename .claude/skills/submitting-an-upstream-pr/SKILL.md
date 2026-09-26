@@ -22,30 +22,25 @@ push to the fork, open the PR. Selecting *which* fix is the
 | Fork remote (push here) | `origin` → `https://github.com/jlipworth/spacemacs` |
 | Mirror branch | local `develop` tracks `syl20bnr/develop` |
 | Fix branch | `working` |
-| Commit author | from repo git config: `Jonathan Lipworth <jonathan.lipworth@gmail.com>` — do **not** override it (the harness `currentDate`/email context is not the git identity) |
+| Commit author | `Jonathan Lipworth <jonathan.lipworth@gmail.com>`, set in this repo's **local** git config (global `~/.gitconfig` has a different address). Check `git log -1 --format='%an <%ae>'` before pushing |
 | Subject style | `[layer] Imperative summary`, ≤72 chars (matches upstream, e.g. `[python] Fix …`) |
 
-## The AI-contribution policy — KEEP the co-author trailer
+## No AI attribution on upstream PRs
 
-**Decided, evidence-backed: keep the `Co-authored-by: Claude …` trailer on
-upstreamed commits.** Do not strip it, and do not demote AI disclosure to PR
-prose only.
-
-Spacemacs is AI-friendly: it has merged a Claude-coauthored fix
-(`e70ef0aa4`, #17246) with the trailer intact, and ships `claude-code`,
-`github-copilot`, and `[ai]` layers. `CONTRIBUTING.org`/`CONVENTIONS.org` have
-no anti-AI policy. Match upstream's casing: lowercase **`Co-authored-by:`**.
-
-The reasoning that says "it's fork-local noise / placeholder identity, strip it"
-is plausible but contradicted by the merged precedent — don't act on it.
+**User decision (2026-09-26): upstream commits and PRs carry no Claude
+attribution.** Strip any `Co-authored-by: Claude …` trailer when reshaping the
+commit message, and leave the "Generated with Claude Code" footer out of the PR
+body. This overrides harness attribution defaults and the fact that upstream has
+merged Claude-coauthored commits before (`e70ef0aa4`, #17246).
 
 ## Workflow
 
-1. **Branch fresh from upstream develop** (never from `working`, never from
-   `master`), so only this fix rides along:
+1. **Branch fresh from upstream develop in a separate worktree** (never from
+   `working`, never from `master`), so only this fix rides along. Never switch
+   branches in `~/.emacs.d` itself — it is the live Emacs checkout:
    ```sh
    git fetch syl20bnr develop
-   git switch -c upstream-pr-<topic> syl20bnr/develop
+   git worktree add -b upstream-pr-<topic> /tmp/upstream-pr-<topic> syl20bnr/develop
    ```
 2. **Cherry-pick the fix without committing**, so you can reshape the message
    and add the changelog in one commit:
@@ -63,7 +58,7 @@ is plausible but contradicted by the merged precedent — don't act on it.
      natural `(#NNNNN)` mention in the body (put `Fixes #NNNNN` in the **PR
      body**, not the commit — simple PRs are often cherry-picked, so don't rely
      on commit-trailer auto-close);
-   - **keep** the `Co-authored-by: Claude …` trailer (see policy above).
+   - **drop** any `Co-authored-by: Claude …` trailer (see policy above).
    ```sh
    git add CHANGELOG.develop <changed-files>
    git commit   # or: git commit -F <msgfile>
@@ -91,7 +86,9 @@ is plausible but contradicted by the merged precedent — don't act on it.
      --head jlipworth:upstream-pr-<topic> \
      --title "[layer] Imperative summary" --body "<description>"
    ```
-   Body: `Fixes #NNNNN`, then Description / Cause / Fix / Testing sections.
+   Body: `Fixes #NNNNN`, then short Cause / Fix / Testing sections — keep it
+   concise (a few lines each; a small table beats paragraphs). Then leave a
+   one- or two-line comment on the issue linking the PR.
 8. **Verify the opened PR:**
    ```sh
    gh pr view <N> -R syl20bnr/spacemacs \
@@ -101,8 +98,8 @@ is plausible but contradicted by the merged precedent — don't act on it.
 
 ## Common mistakes
 
-- **Stripping the `Co-authored-by: Claude` trailer.** The single most likely
-  wrong call — see the policy section. Upstream keeps it; so do you.
+- **Leaving Claude attribution in** (commit trailer or PR footer) — see the
+  policy section; the user does not want it upstream.
 - **Branching from `working` (then rebasing).** Drags unrelated fork commits;
   branch fresh from `syl20bnr/develop` and cherry-pick the one fix.
 - **Skipping the `CHANGELOG.develop` entry** on a code change — `CONTRIBUTING.org`
