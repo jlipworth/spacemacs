@@ -80,6 +80,10 @@ not to merge the two.
    dependencies (never symlink or hardlink live runtime state into tests).
    Inspect actual failures: remote tests need `origin`, and fetch-tags also
    expects `origin/master`; missing prerequisites are not code regressions.
+   On macOS, GNU tar must be installed (`brew install gnu-tar`, per README):
+   with only BSD tar, quelpa's tarballs fail to parse (`Error getting
+   PACKAGE-DESC: (wrong-type-argument arrayp nil)`), and startup then dies
+   with `void-variable evil-evilified-state-map`.
    For GUI verification follow the isolated-instance rules in `AGENTS.md`.
 8. **Push:** `git push --force-with-lease origin working`
    (`develop` needs no push — it just mirrors upstream).
