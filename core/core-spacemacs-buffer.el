@@ -1439,7 +1439,8 @@ startup list.")
 (defun spacemacs-buffer//do-insert-startupify-lists ()
   "Insert the startup lists in the current buffer."
   (setq spacemacs-buffer--startup-list-nr 1)
-  (let ((spacemacs-buffer--icons-font nil) ; need to be updated
+  (let ((non-essential t) ; Rendering lists must not open remote connections.
+        (spacemacs-buffer--icons-font nil) ; need to be updated
         (is-org-loaded (bound-and-true-p spacemacs-initialized)))
     (when-let* (spacemacs-initialized
                 (font (spacemacs-buffer//determine-icons-font 'skip-require))
