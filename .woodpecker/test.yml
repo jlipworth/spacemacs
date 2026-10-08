@@ -12,7 +12,9 @@ matrix:
     - "30.1"
 
 when:
-  - event: [push, pull_request, manual]
+  - event: push
+    branch: working
+  - event: [pull_request, manual]
 
 labels:
   backend: kubernetes
