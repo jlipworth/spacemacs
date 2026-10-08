@@ -1,0 +1,29 @@
+{
+  "pinBranch": "spacemacs-pin",
+  "forks": [
+    {
+      "fork": "jlipworth/lsp-mode",
+      "upstream": "emacs-lsp/lsp-mode",
+      "upstreamBranch": "master",
+      "files": ["layers/+tools/lsp/packages.el"]
+    },
+    {
+      "fork": "jlipworth/markdown-mode",
+      "upstream": "jrblevin/markdown-mode",
+      "upstreamBranch": "master",
+      "files": ["layers/+lang/markdown/packages.el"]
+    },
+    {
+      "fork": "jlipworth/valign",
+      "upstream": "casouri/valign",
+      "upstreamBranch": "master",
+      "files": ["layers/+emacs/org/packages.el", "layers/+lang/markdown/packages.el"]
+    },
+    {
+      "fork": "jlipworth/powerline",
+      "upstream": "milkypostman/powerline",
+      "upstreamBranch": "master",
+      "files": ["layers/+spacemacs/spacemacs-modeline/packages.el"]
+    }
+  ]
+}

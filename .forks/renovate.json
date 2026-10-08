@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Self-hosted Renovate config: bump fork pins in layers/**/packages.el. The default branch (develop) mirrors upstream, so this lives here rather than in a repository config file.",
+  "platform": "github",
+  "repositories": ["jlipworth/spacemacs"],
+  "onboarding": false,
+  "requireConfig": "optional",
+  "baseBranchPatterns": ["working"],
+  "enabledManagers": ["custom.regex"],
+  "dependencyDashboard": false,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Fork pins: :repo \"jlipworth/X\" :commit \"<sha>\" tracking each fork's spacemacs-pin branch",
+      "managerFilePatterns": ["/^layers/.+/packages\\.el$/"],
+      "matchStrings": [
+        ":repo \"(?<depName>jlipworth/[^\"]+)\"\\s+:commit \"(?<currentDigest>[0-9a-f]{40})\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "packageNameTemplate": "https://github.com/{{{depName}}}",
+      "currentValueTemplate": "spacemacs-pin"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["custom.regex"],
+      "groupName": "fork pins",
+      "commitMessageTopic": "fork pins",
+      "labels": ["fork-pins"],
+      "automerge": false
+    }
+  ]
+}
