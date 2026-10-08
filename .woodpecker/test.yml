@@ -80,6 +80,8 @@ steps:
     commands:
       - ln -sf $${CI_WORKSPACE} ~/.emacs.d
       - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      # test-git-fetch-tags fetches origin/master, which only upstream has.
+      - git -C $${CI_WORKSPACE} remote set-url origin https://github.com/syl20bnr/spacemacs.git
       - cd $${CI_WORKSPACE}/tests/core && make func_tests
 
   # Spacemacs-base layer tests
