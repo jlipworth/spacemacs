@@ -25,9 +25,9 @@ steps:
       - apk add --no-cache curl unzip
       - |
         curl -L \
-          "https://github.com/${TESTELPA_REPO}/releases/latest/download/elpa.zip" \
+          "https://github.com/$${TESTELPA_REPO}/releases/latest/download/elpa.zip" \
           --output /tmp/elpa.zip
-      - unzip /tmp/elpa.zip -d ${CI_WORKSPACE}/../testelpa_mirror
+      - unzip /tmp/elpa.zip -d $${CI_WORKSPACE}/../testelpa_mirror
     environment:
       TESTELPA_REPO: *testelpa_repo
 
@@ -35,7 +35,7 @@ steps:
   - name: setup-emacs-home
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
       - |
         cat > ~/.emacs.d/.lock << 'LOCKEOF'
         (setq configuration-layer-elpa-archives
@@ -64,79 +64,79 @@ steps:
   - name: core-installation
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/core && make installation
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/core && make installation
 
   - name: core-unit-tests
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/core && make unit_tests
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/core && make unit_tests
 
   - name: core-func-tests
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/core && make func_tests
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/core && make func_tests
 
   # Spacemacs-base layer tests
   - name: base-installation
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make installation
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make installation
 
   - name: base-unit-tests
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make unit_tests
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make unit_tests
 
   - name: base-func-tests
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make func_tests
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/layers/+distribution/spacemacs-base && make func_tests
 
   # Spacemacs layer tests
   - name: layers-installation
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make installation
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make installation
 
   - name: layers-unit-tests
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make unit_tests
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make unit_tests
 
   - name: layers-func-tests
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make func_tests
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/layers/+distribution/spacemacs && make func_tests
 
   # Python layer tests
   - name: python-unit-tests
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/layers/+lang/python && make unit_tests
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/layers/+lang/python && make unit_tests
 
   - name: python-func-tests
     image: silex/emacs:${EMACS_VERSION}
     commands:
-      - ln -sf ${CI_WORKSPACE} ~/.emacs.d
-      - cp ${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
-      - cd ${CI_WORKSPACE}/tests/layers/+lang/python && make func_tests
+      - ln -sf $${CI_WORKSPACE} ~/.emacs.d
+      - cp $${CI_WORKSPACE}/.lock ~/.emacs.d/.lock 2>/dev/null || true
+      - cd $${CI_WORKSPACE}/tests/layers/+lang/python && make func_tests
