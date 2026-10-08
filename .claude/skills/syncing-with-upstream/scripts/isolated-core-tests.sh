@@ -3,7 +3,10 @@
 set -eu
 repo=$(git rev-parse --show-toplevel)
 real_emacs=$(command -v emacs)
-runtime=$(mktemp -d "${TMPDIR:-/tmp}/spacemacs-core-tests.XXXXXX")
+# Strip a trailing slash (macOS TMPDIR has one): Emacs reads "//" in a file
+# name as a new root, which would point the cache outside the runtime.
+tmp=${TMPDIR:-/tmp}
+runtime=$(mktemp -d "${tmp%/}/spacemacs-core-tests.XXXXXX")
 export SPACEMACS_TEST_RUNTIME="$runtime" SPACEMACS_TEST_EMACS="$real_emacs"
 mkdir "$runtime/bin"
 cat > "$runtime/bin/emacs" <<'WRAPPER'
