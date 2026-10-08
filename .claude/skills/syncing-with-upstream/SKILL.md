@@ -113,6 +113,11 @@ behind their upstreams too, so they are synced by CI:
   `.forks/renovate.json` because the default branch is the upstream mirror),
   opens one grouped `renovate/fork-pins` PR against `working`. Merge it by
   hand after checking the fork's `git range-diff`.
+- **A merged pin bump is not installed by restarting Emacs**: Spacemacs only
+  installs *missing* packages, and checks recipe `:commit` changes only in an
+  explicit update (`SPC f e U`). Run that, or with Emacs quit move the bumped
+  package directories out of `elpa/<ver>/develop/` (keep them as
+  `elpa-backup-<pkg>-<date>`) so the next start reinstalls them at the pin.
 - Test the sync script locally with `bash .forks/test-sync.sh` (throwaway
   repos only) or `DRY_RUN=1 bash .forks/sync.sh` (real forks, pushes
   nothing).
