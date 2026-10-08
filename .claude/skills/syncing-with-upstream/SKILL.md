@@ -1,6 +1,6 @@
 ---
 name: syncing-with-upstream
-description: Use when updating this spacemacs fork from upstream — fast-forwarding local develop from syl20bnr/develop and rebasing the working branch onto it, including resolving conflicts where a local prototype fix was superseded by an upstream commit.
+description: Use when updating this spacemacs fork from upstream — fast-forwarding local develop from syl20bnr/develop and rebasing the working branch onto it, including resolving conflicts where a local prototype fix was superseded by an upstream commit. Also covers the jlipworth fork pins (spacemacs-pin branches, fork-sync/Renovate CI, conflict issues, retiring a pin).
 ---
 
 # Syncing develop From Upstream and Rebasing working
@@ -87,6 +87,60 @@ not to merge the two.
    For GUI verification follow the isolated-instance rules in `AGENTS.md`.
 8. **Push:** `git push --force-with-lease origin working`
    (`develop` needs no push — it just mirrors upstream).
+9. **Check fork pins:** look for open `fork-sync` issues and an open
+   `renovate/fork-pins` PR on jlipworth/spacemacs and handle them (see
+   *Fork pins* below). Renovate rebases its own PR after `working` moves.
+
+## Fork pins
+
+Some layers pin packages to jlipworth forks carrying unmerged fixes
+(`:repo "jlipworth/X" :commit "<sha>"` in `layers/**/packages.el`). Forks get
+behind their upstreams too, so they are synced by CI:
+
+- `.forks/forks.json` lists each fork, its upstream repo/branch, and the
+  layer files that pin it.
+- Each fork has a **`spacemacs-pin`** branch: upstream plus our patches. CI
+  touches only this branch and `pin/<sha12>` tags; PR branches and the fork's
+  `master` are left alone.
+- **`fork-sync` cron** (`.woodpecker/fork-sync.yml` → `.forks/sync.sh`) tags
+  every currently pinned SHA `pin/<sha12>` (package-build clones and then
+  resets to the SHA, so a pin must stay reachable after the branch is
+  rewritten), rebases `spacemacs-pin` onto upstream and pushes with a lease.
+  A conflict opens a `fork-sync` issue instead; so does a rebase that leaves
+  no commits (every patch landed upstream). It also fails if a listed file
+  no longer has the pin shape, which would silently blind Renovate.
+- **`renovate` cron**, an hour later (`.woodpecker/renovate.yml`, config in
+  `.forks/renovate.json` because the default branch is the upstream mirror),
+  opens one grouped `renovate/fork-pins` PR against `working`. Merge it by
+  hand after checking the fork's `git range-diff`.
+- Test the sync script locally with `bash .forks/test-sync.sh` (throwaway
+  repos only) or `DRY_RUN=1 bash .forks/sync.sh` (real forks, pushes
+  nothing).
+- Pushing `spacemacs-pin` runs the fork's own GitHub Actions; that is
+  expected noise.
+
+**Resolving a "needs a manual rebase" issue:**
+```sh
+git clone -b spacemacs-pin https://github.com/jlipworth/X && cd X
+git remote add upstream https://github.com/OWNER/X && git fetch upstream
+old=$(git rev-parse HEAD)
+git rebase upstream/master        # resolve, keeping the patch's intent
+git range-diff upstream/master...$old upstream/master...HEAD
+git push --force-with-lease=spacemacs-pin:$old origin HEAD:spacemacs-pin
+```
+Then close the issue; the next `renovate` run proposes the pin (or trigger
+the cron by hand). Leave the `pin/*` tag alone — the old pin needs it until
+the Renovate PR merges.
+
+**Retiring a pin** ("patches landed upstream" issue): restore the package's
+normal entry in each listed layer file (match `syl20bnr/develop`), remove its
+entry from `.forks/forks.json`, commit both together on `working`, and close
+the issue. Keep the fork and its tags; old checkouts may still reference them.
+
+**Adding a fork:** create `spacemacs-pin` on the fork at the commit to pin
+and tag it `pin/<sha12>`; pin the layer with the full 40-hex SHA in the
+`:repo … :commit …` order Renovate matches; add a `forks.json` entry; run
+`DRY_RUN=1 bash .forks/sync.sh`.
 
 ## Common mistakes
 

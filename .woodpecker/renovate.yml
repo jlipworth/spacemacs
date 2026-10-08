@@ -1,0 +1,21 @@
+# Renovate: propose fork pin bumps (config in .forks/renovate.json).
+# Runs on the "renovate" cron only, after the "fork-sync" cron.
+
+when:
+  - event: cron
+    cron: renovate
+
+labels:
+  backend: kubernetes
+
+steps:
+  - name: renovate
+    image: renovate/renovate:44.145.1
+    environment:
+      RENOVATE_TOKEN:
+        from_secret: github_pat
+      RENOVATE_CONFIG_FILE: .forks/renovate.json
+      RENOVATE_GIT_AUTHOR: "Renovate Bot <renovate@noreply.github.com>"
+      LOG_LEVEL: info
+    commands:
+      - renovate

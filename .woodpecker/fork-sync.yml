@@ -1,0 +1,22 @@
+# Rebase each fork's spacemacs-pin branch onto its upstream (.forks/sync.sh).
+# Runs on the "fork-sync" cron only, ahead of the "renovate" cron, which then
+# proposes the new pins as a pull request against working.
+
+when:
+  - event: cron
+    cron: fork-sync
+
+labels:
+  backend: kubernetes
+
+steps:
+  - name: fork-sync
+    image: alpine:3.22
+    environment:
+      GH_TOKEN:
+        from_secret: github_pat
+    commands:
+      - apk add --no-cache bash git jq github-cli >/dev/null
+      - bash .forks/test-sync.sh
+      - git config --global url."https://x-access-token:$${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+      - bash .forks/sync.sh
