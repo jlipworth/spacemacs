@@ -25,7 +25,7 @@
   '(
     (lsp-mode :location
               (recipe :fetcher github :repo "jlipworth/lsp-mode"
-                      :commit "9346103aaa900db29ef90f5c244f7f0ffc83436f"
+                      :commit "819ac5ae29d42a631a81e42751f2c7148e1fdc3d"
                       :files (:defaults "clients/*.*")))
     (lsp-ui :toggle lsp-use-lsp-ui)
     (consult-lsp :requires consult)
