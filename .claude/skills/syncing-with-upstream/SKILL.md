@@ -1,6 +1,6 @@
 ---
 name: syncing-with-upstream
-description: Use when updating this spacemacs fork from upstream — fast-forwarding local develop from syl20bnr/develop and rebasing the working branch onto it, including resolving conflicts where a local prototype fix was superseded by an upstream commit. Also covers the jlipworth fork pins (spacemacs-pin branches, fork-sync/Renovate CI, conflict issues, retiring a pin).
+description: Use when updating this spacemacs fork from upstream — fast-forwarding local develop from syl20bnr/develop and rebasing the working branch onto it, including resolving conflicts where a local prototype fix was superseded by an upstream commit. Also covers the jlipworth package fork pins (.forks/forks.json, spacemacs-pin branches, fork-sync/Renovate CI, fork-sync conflict issues, Renovate fork-pins PRs) — use when updating the forks or when the user's PR against a fork-pinned Emacs package has merged and the pin should be retired.
 ---
 
 # Syncing develop From Upstream and Rebasing working
@@ -137,7 +137,12 @@ Then close the issue; the next `renovate` run proposes the pin (or trigger
 the cron by hand). Leave the `pin/*` tag alone — the old pin needs it until
 the Renovate PR merges.
 
-**Retiring a pin** ("patches landed upstream" issue): restore the package's
+**Retiring a pin** ("patches landed upstream" issue, or a just-merged PR
+the cron hasn't seen yet — confirm with `DRY_RUN=1 bash .forks/sync.sh`
+reporting "all patches are upstream"). First check the package archive
+actually ships the fix: the MELPA version (`YYYYMMDD.HHMM`, UTC, from
+`https://melpa.org/packages/archive-contents`) must be at or after the
+merge commit's time; otherwise wait. Then restore the package's
 normal entry in each listed layer file (match `syl20bnr/develop`), remove its
 entry from `.forks/forks.json`, commit both together on `working`, and close
 the issue. Keep the fork and its tags; old checkouts may still reference them.
