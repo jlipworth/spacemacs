@@ -23,10 +23,7 @@
 
 (defconst lsp-packages
   '(
-    (lsp-mode :location
-              (recipe :fetcher github :repo "jlipworth/lsp-mode"
-                      :commit "819ac5ae29d42a631a81e42751f2c7148e1fdc3d"
-                      :files (:defaults "clients/*.*")))
+    lsp-mode
     (lsp-ui :toggle lsp-use-lsp-ui)
     (consult-lsp :requires consult)
     (helm-lsp :requires helm)
