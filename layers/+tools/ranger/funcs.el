@@ -36,6 +36,8 @@
         (ranger)
       (deer))))
 
+(defvar dirvish-default-layout)
+
 (defun ranger/dirvish-full-layout ()
   "Open dirvish with the full layout."
   (interactive)
