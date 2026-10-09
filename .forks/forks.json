@@ -8,12 +8,6 @@
       "files": ["layers/+tools/lsp/packages.el"]
     },
     {
-      "fork": "jlipworth/markdown-mode",
-      "upstream": "jrblevin/markdown-mode",
-      "upstreamBranch": "master",
-      "files": ["layers/+lang/markdown/packages.el"]
-    },
-    {
       "fork": "jlipworth/valign",
       "upstream": "casouri/valign",
       "upstreamBranch": "master",

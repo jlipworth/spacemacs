@@ -28,9 +28,7 @@
     edit-indirect
     emoji-cheat-sheet-plus
     gh-md
-    (markdown-mode :location
-                   (recipe :fetcher github :repo "jlipworth/markdown-mode"
-                           :commit "b23ecbfc07a1583f18bcdfae9a78bc783bcb2379"))
+    markdown-mode
     markdown-toc
     smartparens
     (valign :location
