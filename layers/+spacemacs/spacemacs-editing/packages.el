@@ -116,13 +116,18 @@
       (let ((dired-quick-sort-suppress-setup-warning 'message))
         (dired-quick-sort-setup))
       (advice-remove 'dired-noselect 'dired-noselect@quick-sort-setup))
+    ;; Prevent `evil-collection' from changing the "s" binding below.
+    ;; `evil-collection-binding-overrides' is only defined once
+    ;; evil-collection has loaded, and evil-collection is not loaded at
+    ;; all with the emacs editing style, so register the override only
+    ;; when it appears instead of touching the variable unconditionally.
+    (with-eval-after-load 'evil-collection
+      (add-to-list 'evil-collection-binding-overrides
+                   '(search-or-filter :enabled
+                                      (lambda (map-sym _ _ _)
+                                        (not (eq map-sym 'dired-mode-map))))))
     :config
-    (evil-define-key 'normal dired-mode-map "s" 'dired-quick-sort-transient)
-    ;; prevent `evil-collection' from changing this binding
-    (add-to-list 'evil-collection-binding-overrides
-                 '(search-or-filter :enabled
-                                    (lambda (map-sym _ _ _)
-                                      (not (eq map-sym 'dired-mode-map)))))))
+    (evil-define-key 'normal dired-mode-map "s" 'dired-quick-sort-transient)))
 
 (defun spacemacs-editing/init-drag-stuff ()
   (use-package drag-stuff
